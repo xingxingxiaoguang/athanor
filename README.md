@@ -55,6 +55,9 @@ Every effect is a file in `src/fx/<category>/<name>.js`. The [catalog](docs/CATA
 The [MVP guide](experiments/vfx-lab/README.md) covers the seven JSON/MCP tools, event-aligned comparisons,
 source snapshots, split color/light export, and the experiment's current limits.
 
+The [AI authoring product proposal](docs/ai-vfx-tools/README.md) describes reference and technique discovery,
+partial reuse, creative operators, observation tools, and a phased validation plan. Its new APIs are proposed.
+
 ## use one.
 
 **In a browser game** (canvas, Phaser, PixiJS, Kaplay, three.js), use the code. No dependencies.

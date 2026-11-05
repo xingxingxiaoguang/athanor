@@ -102,3 +102,5 @@ node experiments/vfx-lab/cli.mjs export '{"run":"替换为选定的 run"}'
 ## 基础创作能力调研
 
 [Spine Particle 调研](research/tsnm-spine-particle/README.md)分析其发射、生命周期、运动、路径、资源和光带机制，记录实现探测与适用边界，并提出面向 AI 的算子、工具定义及创作验证建议。建议尚未实现，不改变当前七个工具的能力范围。
+
+[AI 像素特效创作工具产品全景设计](../../docs/ai-vfx-tools/README.md)进一步结合全库实现，定义参考与技法、局部复用、基础算子、观察实验、AI 工具接口、创作流程和分期验收。新接口均为产品方案。
