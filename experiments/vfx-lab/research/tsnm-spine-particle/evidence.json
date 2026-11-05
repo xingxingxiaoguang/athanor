@@ -1,0 +1,144 @@
+{
+  "observedAt": "2026-11-05",
+  "scriptUrl": "https://tsnm-spine-particle.com/assets/index-CFDvMOEj.js",
+  "scriptSha256": "468e534eabb2221f3c090c130787d357a17962aac9d6a1a795c2f3a4ef82b7c0",
+  "method": "Only isolated numeric functions from the publicly served bundle were executed in a VM; UI, preview and export integration were not tested by these probes.",
+  "seed": {
+    "sameInputsRepeat": true,
+    "differentBatchChanges": true,
+    "samples": [
+      0.3034085868857801,
+      0.7206829448696226,
+      0.36768858577124774,
+      0.7628719464410096,
+      0.8735057252924889
+    ]
+  },
+  "curve": {
+    "points": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 0.1,
+        "y": 1
+      },
+      {
+        "x": 0.9,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      }
+    ],
+    "min": -0.008229833333333332,
+    "max": 1,
+    "linearAt95": 0,
+    "defaultAt95": -0.006944444444444449
+  },
+  "path": {
+    "points": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 10,
+        "y": 0
+      },
+      {
+        "x": 110,
+        "y": 0
+      }
+    ],
+    "uniform": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 27.5,
+        "y": 0
+      },
+      {
+        "x": 55,
+        "y": 0
+      },
+      {
+        "x": 82.5,
+        "y": 0
+      },
+      {
+        "x": 110,
+        "y": 0
+      }
+    ],
+    "uniformStepDistances": [
+      27.5,
+      27.5,
+      27.5,
+      27.5
+    ],
+    "perSegment": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      },
+      {
+        "x": 10,
+        "y": 0
+      },
+      {
+        "x": 60,
+        "y": 0
+      },
+      {
+        "x": 110,
+        "y": 0
+      }
+    ],
+    "perSegmentStepDistances": [
+      5,
+      5,
+      50,
+      50
+    ]
+  },
+  "compression": {
+    "straightBefore": 11,
+    "straightAfter": 2,
+    "impactAfter": [
+      {
+        "time": 0,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "time": 0.49,
+        "x": 49,
+        "y": 0
+      },
+      {
+        "time": 0.5,
+        "x": 50,
+        "y": 20
+      },
+      {
+        "time": 0.51,
+        "x": 51,
+        "y": 0
+      },
+      {
+        "time": 1,
+        "x": 100,
+        "y": 0
+      }
+    ]
+  }
+}

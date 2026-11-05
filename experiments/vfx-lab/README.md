@@ -98,3 +98,7 @@ node experiments/vfx-lab/cli.mjs export '{"run":"替换为选定的 run"}'
 ## 独立创作者测评
 
 [2026-11-05 黑盒测评归档](evaluations/2026-11-05/README.md)保留了一个未读工具实现的 AI 创作者的意图、三版原创作品、操作记录与图像证据。正式复核以 tool definitions 的接口及其与正常作品代码编辑的组合作为评估对象；第一轮混入 GUI 和不恰当的 A/B 判据，相关结论已标注撤回。
+
+## 基础创作能力调研
+
+[Spine Particle 调研](research/tsnm-spine-particle/README.md)分析其发射、生命周期、运动、路径、资源和光带机制，记录实现探测与适用边界，并提出面向 AI 的算子、工具定义及创作验证建议。建议尚未实现，不改变当前七个工具的能力范围。
