@@ -6,6 +6,8 @@
 
 这版完成的是契约与冻结证据底座、首批路径/图像创作链，以及粒子/贴图/库内材质/粒子探测闭环。**整体实施计划尚未完成：B阶段完整场景未验收，C只提前交付部分probe，D尚未验收。** 下一步有具体任务，不需要重新讨论产品方向。
 
+已由不继承开发对话的新agent在无records/drafts/node_modules的干净克隆中实际接手演练；执行范围、原始评审与小遗漏修正见[交接验证记录](handoff-verification.md)。这次文档演练不代替下一功能的独立复杂创作门。
+
 ## 1 接手后的前五件事
 
 1. 读根目录[AGENTS.md](../../AGENTS.md)，再读本文。检查Git状态、分支和Node版本；不要覆盖已有草稿或别人的未提交改动。有`.codegraph/`时先用CodeGraph，无则跳过，不自动索引。
@@ -151,6 +153,7 @@ await call('inspect', { ref: { kind: 'operator', id: 'core/particle' } });
 const a = await call('render', { id: 'lab/cinder-orbit', note: 'handoff baseline' });
 const b = await call('render', { id: 'lab/cinder-orbit', options: { glow: 0 }, note: 'same design without outer light' });
 const color = await call('probe', { run: a.run, view: 'color', at: { times: [0.8, 1.2, 1.8] } });
+const light = await call('probe', { run: a.run, view: 'light', at: { times: [0.8, 1.2, 1.8] } });
 const states = await call('probe', {
   run: a.run, view: 'particles', layers: ['nozzle--1'], limit: 2,
   at: { times: [0.2, 0.4, 0.7] },
@@ -164,7 +167,7 @@ if (!validation.passed) throw new Error(JSON.stringify(validation.errors));
 const exported = await call('export', { run: a.run, validationRef: validation.validationRef });
 writeFileSync('records/vfx-lab/handoff-smoke.json', JSON.stringify(calls, null, 2) + '\n');
 console.log(JSON.stringify({ run: a.run, contact: a.image, color: color.image,
-  particles: states.image, comparison: comparison.image,
+  light: light.image, particles: states.image, comparison: comparison.image,
   validationRef: validation.validationRef, exported: exported.directory }, null, 2));
 JS
 ```
