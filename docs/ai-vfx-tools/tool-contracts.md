@@ -1,6 +1,6 @@
 # AI 创作工具定义与数据契约
 
-这是[产品全景设计](README.md)的目标接口。保留现有七个工具的名称与兼容入口，新增复用、探测、实验和历史查询。本文展示目标参数与结果语义，不表示当前 MCP 已支持这些字段；现行定义位于 [definitions.mjs](../../experiments/vfx-lab/definitions.mjs)。
+这是[产品全景设计](README.md)的目标接口。保留现有七个工具的名称与兼容入口，新增复用、探测、实验和历史查询。本文展示完整目标参数与结果语义。A 阶段已实现的部分、兼容语法与未完成范围见[实施状态](implementation-status.md)，精确 SDK 契约见[公开创作 API](authoring-api.md)；不能把本文所有字段视为已经支持。现行输入/输出定义位于 [definitions.mjs](../../experiments/vfx-lab/definitions.mjs)。
 
 ## 1 接口组织原则
 
@@ -142,6 +142,8 @@ type SampleAt =
 
 **职责：**让 AI 查看当前问题涉及的局部事实，避免改作品来调试。
 
+已实现子集（2026-11-06）：单run保存preview/color/light/combined；可选observer声明并保存的粒子Birth/State、数量、所选属性和离散轨迹，及显式冻结重放。具体参数为`run/at/view/sampling/layers/particles/fields/limit`，clock目前仅effect，粒子使用字符串birth ID。任意mask/field、图像层隔离、without修改器与playback时钟仍是下述完整目标，不能直接作为当前入参。精确签名见[core/particle](authoring-api.md#coreparticle)和tools发现。
+
 输入：`run` 必填；`at: SampleAt`、`layers`、`particles`、`fields`、`view`、`without` 可选；`sampling` 可选 `saved` 或 `replay`，默认使用已有帧。
 
 `view` 可以请求轮廓、去光、明暗、轨迹、中间场、mask、像素变化、层叠加、背景或动作等已支持视图。`fields` 可以请求位置、速度、年龄、透明度等已登记属性。`without` 仅接受已登记的层或修改器 ID，产生有标记的诊断变体。
@@ -165,6 +167,8 @@ type SampleAt =
 ## 8 fx_compare
 
 **职责：**按明确问题比较已保存的版本与条件。
+
+已实现子集还支持兼容参数 `channel:preview|color|light|combined`，与 event/offsets 或 alignment:time/times 配合，直接观察保存通道；完整目标中的任意 views/场景意图尚未全部实现。
 
 输入：`runs` 必填，2 至 4 个；`alignment` 显式选择共享事件、绝对时间或声明周期的相位；`offsets` 或 `times` 按对齐方式提供；`views`、显示尺度和场景比较意图可选。
 

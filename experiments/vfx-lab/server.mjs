@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { LAB, RECORDS, history } from "./lab.mjs";
 import { TOOLS } from "./definitions.mjs";
 import { invoke } from "./invoke.mjs";
+import { errorResult } from "./errors.mjs";
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".json": "application/json" };
 export function createLabServer() {
@@ -27,7 +28,7 @@ export function createLabServer() {
         }
         const { name, arguments: args } = JSON.parse(body);
         try { return reply(200, { ok: true, result: await invoke(name, args) }); }
-        catch (error) { return reply(400, { ok: false, error: error.message }); }
+        catch (error) { return reply(400, { ok: false, error: error.message, diagnostic: errorResult(error) }); }
       }
       if (req.method !== "GET") return reply(405, { error: "Method not allowed" });
       let base, filename;

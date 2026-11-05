@@ -1,5 +1,13 @@
 export const RECIPES = [
   {
+    id: "particle-material", name: "出生源 → 独立运动 → 生命周期材质 → 粒子探测", words: "particle emitter texture lifetime smoke force orbit 粒子 发射 运动 贴图 生命周期 烟 火花 环流",
+    mechanism: "Lift the library's birth-time source sampling, overlapping cyclic particles, analytic drift and pixel material implementations into a composition. Keep schedule/domain, sampled birth attributes, forces/trajectory and drawing independent. Use a custom drawing callback or a texture sequence; declare observations and probe the selected saved run instead of adding debug draws.",
+    references: ["lab/cinder-orbit", "fire/torch", "arcane/portal", "explosions/small-explosion"],
+    resources: ["core/particle", "core/schedule", "core/domain", "core/motion", "core/curve", "core/texture", "core/material"],
+    decisions: ["Which shape carries the main gesture, and which fragments support it?", "Do fragments preserve a source's velocity, orbit a target, or change material while keeping identity?", "Which particle group and time window would test your motion/material question?"],
+    failures: ["Do not tie inward motion to boundary sampling.", "Do not reconstruct emitter velocity from output FPS.", "A sparse sampled trajectory does not certify continuous collisions or a real history trail."],
+  },
+  {
     id: "propagation", name: "传播 → 到达 → 生长", words: "ice frost crystal nova 冰霜 晶体 扩散 生长",
     mechanism: "Use one expanding front. Invert its distance curve to obtain each site's arrival time; trigger growth and fragments from that same time.",
     references: ["ice/frost-nova", "nature/earth-spike", "lab/cryo-bloom"],
@@ -26,5 +34,13 @@ export const RECIPES = [
     references: ["water/waterfall", "arcane/portal", "fire/torch"],
     decisions: ["Which large shape stays stable?", "Where should fine detail flow, break off or collect?"],
     failures: ["Reseeding every frame causes flicker.", "Matching only the first and last image can still hide a velocity discontinuity."],
+  },
+  {
+    id: "path-dissolve", name: "共用路径 + 到达场 + 边缘衍生", words: "path ribbon dissolve mask arrival ash copper 路径 条带 消融 侵蚀 边缘 铜 纸 布料",
+    mechanism: "Author the silhouette and trajectories independently. Sample paths by arc length, use separate head/tail curves for a continuous strip, and share a static first-arrival field between keep/edge masks and particle birth records. Material and light remain replaceable.",
+    references: ["lab/ember-weave"],
+    operators: ["core/path", "core/curve", "core/random", "core/domain", "core/schedule", "core/motion", "core/mask", "core/field", "core/image", "core/light"],
+    decisions: ["Should the ordering follow a crack, a directional sweep or authored texture?", "Which broad contour carries the gesture with light disabled?", "Which mechanisms can be reused while replacing the silhouette/material?"],
+    failures: ["A threshold band's field units are not a fixed width in pixels.", "An interval mask difference cannot invent exact birth times for arbitrary dynamic fields.", "A continuous strip still needs a deliberate width profile and head/tail relation."],
   },
 ];

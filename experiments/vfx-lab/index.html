@@ -5,7 +5,7 @@
   <title>Athanor / 特效实验台</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header><div class="brand"><span class="mark">✳</span><span>athanor<span class="muted"> / lab</span></span><span class="badge">实验版 0.1</span></div><div class="header-note">让判断有画面，让修改有依据。</div></header>
+  <header><div class="brand"><span class="mark">✳</span><span>athanor<span class="muted"> / lab</span></span><span class="badge">实验版 0.2</span></div><div class="header-note">让判断有画面，让修改有依据。</div></header>
   <main>
     <section class="intro"><div><p class="eyebrow">CODE → PIXELS → JUDGMENT</p><h1>先做出来，再看清楚。</h1><p>为 AI 准备创作工具，为创作者保留判断。用同一个问题，比较两个方向。</p></div><button id="demo" class="primary">运行示例实验 <span>↗</span></button></section>
     <div class="workspace">
@@ -14,7 +14,7 @@
           <label for="effect">特效</label><select id="effect"><option value="lab/cryo-bloom">Cryo bloom · 冰晶绽放</option><option value="ice/frost-nova">Frost nova · 冰霜新星</option><option value="melee/sword-slash">Sword slash · 刀光</option><option value="explosions/small-explosion">Explosion · 爆炸</option><option value="arcane/portal">Portal · 传送门</option><option value="fire/torch">Torch · 火焰</option></select>
           <label for="direction">主体结构 <span>示例特效可用</span></label><select id="direction"><option value="crown">晶冠 · 中心高、外缘低</option><option value="wave">碎冰波 · 低矮、向外铺开</option></select>
           <div class="pair"><div><label for="seed">随机种子</label><input id="seed" type="number" min="0" max="999999" value="4"></div><div><label for="bg">背景</label><select id="bg"><option value="ground">暗色地面</option><option value="light">浅色场景</option><option value="dark">深色场景</option></select></div></div>
-          <label for="glow">光的强度 <output id="glow-value">0.35</output></label><input id="glow" type="range" min="0" max="1" step="0.05" value="0.35">
+          <label for="glow">光的强度 <output id="glow-value">0.35</output></label><input id="glow" type="range" min="0" max="1" step="any" value="0.35">
           <label class="check"><input id="secondary" type="checkbox" checked> 加入碎屑等次级运动</label>
           <label for="note">这一版想验证什么？</label><textarea id="note" rows="3">中心高的晶冠，是否比平铺的冰波更有力量？</textarea>
           <button id="render" class="primary full">生成可比较的版本</button><p class="hint">保留源码快照、事件和分层图像。艺术选择可继续在代码中修改。</p>
@@ -30,7 +30,7 @@
         <section class="panel evidence"><div class="section-title"><span class="step">03</span><h2>找证据，再下判断</h2></div><div class="actions"><button id="compare">按释放时刻对齐</button><button id="validate">检查当前版本</button><button id="export">导出当前版本</button></div><p class="hint">技术检查不评价美感。比较轮廓、方向、节奏，以及目标尺寸下的可读性。</p><div id="evidence"></div></section>
       </div>
     </div>
-    <details class="panel tool-panel"><summary>AI 工具接口 <span>7 个工具 · JSON CLI / stdio MCP</span></summary><pre id="tools"></pre></details>
+    <details class="panel tool-panel"><summary>AI 工具接口 <span>9 个工具 · JSON CLI / stdio MCP</span></summary><pre id="tools"></pre></details>
     <footer><span>实验目标：验证“代码 → 画面 → 判断 → 修改”的闭环。</span><span>本地运行 · 无模型服务 · 无自动美感评分</span></footer>
   </main><div id="status" role="status" aria-live="polite">准备就绪</div>
   <dialog id="source-dialog"><div class="dialog-head"><h2>参考与代码</h2><button id="close-source">关闭</button></div><pre id="source"></pre></dialog>

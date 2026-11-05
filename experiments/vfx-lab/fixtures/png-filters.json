@@ -1,0 +1,43 @@
+{
+  "provenance": "Fixed 2x2 RGBA8 wire fixtures built with Python standard-library struct/zlib; all filters preserve straight RGB at alpha 0/64/255.",
+  "rgba": [
+    10,
+    20,
+    30,
+    255,
+    60,
+    40,
+    20,
+    64,
+    11,
+    21,
+    33,
+    255,
+    61,
+    41,
+    21,
+    0
+  ],
+  "fixtures": [
+    {
+      "filter": 0,
+      "png": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGklEQVR4nGPgEpH7b6Mh4sDALar431ZTlAEAIj0Dr6cDZ+IAAAAASUVORK5CYII="
+    },
+    {
+      "filter": 1,
+      "png": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGUlEQVR4nGPkEpH7byTyzZGRW1QRyPjCCAAr+gU2pQBdHAAAAABJRU5ErkJggg=="
+    },
+    {
+      "filter": 2,
+      "png": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGklEQVR4nGPiEpH7b6Mh4sDEyMjMwMjIeAAAGxgCwGKiN0MAAAAASUVORK5CYII="
+    },
+    {
+      "filter": 3,
+      "png": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGklEQVR4nGPmEpH7by7HepCZjVuoQYr7dyIAJD4EgVDo3boAAAAASUVORK5CYII="
+    },
+    {
+      "filter": 4,
+      "png": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGklEQVR4nGPhEpH7byTyzZGFkZGZgZGR8QAAI5wDiZHw4B4AAAAASUVORK5CYII="
+    }
+  ]
+}

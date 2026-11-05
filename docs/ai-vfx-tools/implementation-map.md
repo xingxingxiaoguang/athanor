@@ -1,6 +1,6 @@
 # 特效库实现与创作能力地图
 
-本文为[产品全景设计](README.md)提供实现依据，并把可复用机制映射到目标能力。当前能力指实际源码；目标 API 名称用于设计，尚未成为可调用的新接口。
+本文为[产品全景设计](README.md)提供实现依据，并把可复用机制映射到目标能力。当前能力指实际源码；下列全景 API 仍以设计为主；B 阶段已实现其中首批 path/random/curve/domain/schedule/motion/mask/field/image/light 子集，具体签名不能直接用表中目标代替。A 阶段已经登记原有 Painter/颜色/时钟/模块契约，见[公开创作 API](authoring-api.md)和[实施状态](implementation-status.md)。
 
 ## 1 库的实际结构
 
@@ -18,6 +18,23 @@
 | [工作流工具](../../experiments/vfx-lab/README.md) | 检索、阅读、建稿、渲染、比较、检查与导出 | 补创作契约、历史验证、可选观察窗口和上下文效率 |
 
 实际模块统计见 [inventory.json](inventory.json)。`create` 入口包含状态模拟与组合，不等于 132 种物理系统；直接导出 `drawBack` 的数量也不覆盖所有实例内部的后层画法。静态导入或文本出现次数不能当作实际使用频率或质量证明。
+
+### 2026-11-06 粒子闭环：从实现路径提炼
+
+两大来源都用于算法与代码能力建设。原库不是只供“看效果”：本轮实际阅读core粒子/模拟器、火焰和奥术辅助模块，以及爆炸、地击、火炬、传送门的实现；下表区分直接复用、通用化和仍待提炼部分。[参考平台当次构建核对](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-particle-loop.md)另记其底层机制及差异。
+
+| 原库实现路径 | 提炼/复用方式 | 新公共入口与证据 |
+| --- | --- | --- |
+| core/particles.fly、flyV；fire/_lib.along、drift | 统一位置+速度，保持解析恒力/阻力，增加分轴阻力与近零稳定分支；不重写旧效果 | motion.ballistic；与原fly/flyV/drift数值等价回归 |
+| core/particles.burst、stream、cycle；fire/_lib.looped | 排期变成稳定Birth[]；周期副本区分身份与randomId，显式前置寿命窗口和重叠副本；rate采用明确半开区间 | schedule.burst/rate/cycle/resident；周期超过一轮寿命与重复像素回归 |
+| fire/_lib.burn里tip(i,t-age)、出生时保留羽流摆动与火转烟 | 将出生源采样、位置/速度、阶段材质拆开；源velocity明确给出，避免按输出帧率推导 | particle.emitter transform/initial/motion/material；出生变换与速度继承数值回归 |
+| fire/_lib.firePuff、smokePuff、ember、spark | **直接导入原函数**，只适配粒子State、颜色与Painter状态；保留上游署名 | material.fire/smoke/ember/spark；原函数颜色/光逐像素等价回归 |
+| arcane/_lib.mote、streak；portal的infall/skaters | 速度方向画法直接复用；轨道与时序可由trajectory/offset替换，未冒称把整件portal改成物理解 | material.mote/streak、particle.motion.trajectory/offset；画法等价、物理/视觉位置分离回归 |
+| Painter.sprite；arcane/_lib.squeezed与Painter.each的逆空间采样 | 通用像素轴心、旋转/缩放/镜像、最近采样；纹理、序列选帧与画法分开 | texture.rgba/ascii/sheet/sequence/frame/draw；真实RGBA、轴心与90°旋转回归 |
+| sim里各类粒子独立的生命、尺寸、冷却、延迟与前后层画法 | 脱离固定kind开关，抽出属性与生命周期回调；稳定通道使改色/换资源不扰动出生和速度 | particle.emitter/sample/draw，curve.color；通道独立与显式相关回归 |
+| sim.BRAND落地生火、GRIT/SPARK反弹；fire/_lib.sparkAt连续接触求根 | 已读实现，保留为下一轮接触/衍生/历史尾迹的候选；**本轮未提炼完成** | 后续需精确碰撞时间、事件身份与重复触发证据，不能从radial/attract已实现推断 |
+
+参考平台补足的方向包括通用发射域、独立发射方向、出生范围与速度继承、径向/切向力、延迟汇聚、加权资源、序列帧与轴心、生命周期曲线。实现采用本项目像素/秒/弧度、具名随机与解析/固定tick求值，不复刻它的参数界面或任意内部倍率。库内提炼与外部机制对照共同落在普通代码接口上。
 
 ## 2 代表性效果的制作机制
 

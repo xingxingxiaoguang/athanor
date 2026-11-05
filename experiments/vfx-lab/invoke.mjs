@@ -11,10 +11,10 @@ export function invoke(name, args = {}) {
     }, (error, stdout, stderr) => {
       try {
         const result = JSON.parse(stdout);
-        if (!result.ok) throw new Error(result.error.message);
+        if (!result.ok) throw Object.assign(new Error(result.error.message), result.error);
         if (error) throw error;
         resolve(result.result);
-      } catch (e) { reject(new Error(e.message || stderr || "Tool process failed")); }
+      } catch (e) { reject(Object.assign(new Error(e.message || stderr || "Tool process failed"), { code: e.code, recovery: e.recovery, path: e.path, details: e.details })); }
     });
     child.stdin.on("error", () => {});
     child.stdin.end(JSON.stringify(args));
