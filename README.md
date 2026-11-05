@@ -51,6 +51,10 @@ the idea at library scale, with a skill to keep going.
 
 Every effect is a file in `src/fx/<category>/<name>.js`. The [catalog](docs/CATALOG.md) lists them all.
 
+**Experimental AI authoring lab:** run `npm run lab`, then open `http://127.0.0.1:4173`.
+The [MVP guide](experiments/vfx-lab/README.md) covers the seven JSON/MCP tools, event-aligned comparisons,
+source snapshots, split color/light export, and the experiment's current limits.
+
 ## use one.
 
 **In a browser game** (canvas, Phaser, PixiJS, Kaplay, three.js), use the code. No dependencies.

@@ -3,3 +3,6 @@ dist/
 records/
 sheets/
 .DS_Store
+experiments/vfx-lab/drafts/
+output/playwright/
+.playwright-cli/

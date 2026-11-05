@@ -15,7 +15,11 @@
   "scripts": {
     "render": "node tools/render.mjs",
     "check": "node tools/check.mjs",
-    "gallery": "node tools/serve.mjs"
+    "gallery": "node tools/serve.mjs",
+    "lab": "node experiments/vfx-lab/server.mjs",
+    "lab:tools": "node experiments/vfx-lab/cli.mjs tools",
+    "lab:mcp": "node experiments/vfx-lab/mcp.mjs",
+    "lab:test": "node --test experiments/vfx-lab/test.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.10"
