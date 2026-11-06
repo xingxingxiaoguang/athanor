@@ -20,7 +20,7 @@
     "lab": "node experiments/vfx-lab/server.mjs",
     "lab:tools": "node experiments/vfx-lab/cli.mjs tools",
     "lab:mcp": "node experiments/vfx-lab/mcp.mjs",
-    "lab:test": "node --test --test-concurrency=1 experiments/vfx-lab/test.mjs experiments/vfx-lab/authoring.test.mjs experiments/vfx-lab/particle.test.mjs"
+    "lab:test": "node --test --test-concurrency=1 experiments/vfx-lab/test.mjs experiments/vfx-lab/authoring.test.mjs experiments/vfx-lab/particle.test.mjs experiments/vfx-lab/source.test.mjs experiments/vfx-lab/contact.test.mjs experiments/vfx-lab/trail.test.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.10"

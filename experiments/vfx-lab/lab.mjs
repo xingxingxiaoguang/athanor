@@ -78,7 +78,7 @@ function targetOf(args) { return args.target ?? (args.run ? { run: args.run } : 
 
 function capabilities(fx) {
   const declared = typeof fx.mod.observe === 'function';
-  return { wholeEffect: true, colorLight: true, frozenReplay: "relative local JavaScript only; inspect run replay status", namedLayers: false, particles: declared, trajectories: declared ? "sampled declared positions; no inferred continuous path" : false, fields: false, fullAct: false, observation: declared ? "Optional observe(t,options) particle protocol; verified and saved by render, not inferred from pixels" : null, authoringDeclaration: fx.mod.authoring ?? null };
+  return { wholeEffect: true, colorLight: true, frozenReplay: "relative local JavaScript only; inspect run replay status", namedLayers: false, particles: declared, trails: declared ? "actual declared sampled history only; render manifest lists tracks" : false, contacts: declared ? "actual declared contact event tables only; render manifest lists groups/counts" : false, sources: declared ? "actual declared sources only; render manifest lists available IDs" : false, trajectories: declared ? "sampled declared positions; no inferred continuous path" : false, fields: false, fullAct: false, observation: declared ? "Optional observe(t,options) particle/source/contact/trail protocols; availability verified and saved by render, not inferred from pixels" : null, authoringDeclaration: fx.mod.authoring ?? null };
 }
 
 export function presentRun(manifest, detail = "summary") {
@@ -116,7 +116,8 @@ export function sample(fx, times, options = {}, { margin = 0, background = "grou
   let previous = 0;
   return times.map((t) => {
     if (t < previous || !Number.isFinite(t)) throw new Error("Sample times must be finite and in order");
-    inst.update(t - previous); previous = t;
+    if (fx.mod.create) inst.update(t - previous); else inst.seek(t);
+    previous = t;
     clearFrame(frame); inst.draw(frame);
     const color = frame.color.slice(), light = frame.light.slice();
     const combined = composite(frame, new Uint8ClampedArray(w * h * 4));
@@ -204,7 +205,7 @@ async function renderResolved(args, backend) {
     files: { preview: "preview.png", color: "color.png", light: "light.png", combined: "combined.png", contact: "contact.png" },
     sourceFiles: Object.keys(snapshot), sourceDigest, replay: replaySupport(snapshot, entryFor(fx.id)),
     ending: fx.mod.authoring?.ending ?? (m.loop ? "loop" : "clear"), capabilities: capabilities(fx),
-    observation: observation ? { file: "observations.json", sha256: hash(observationText), version: 1, layers: observation.layers.map((g) => ({ id: g.id, birthCount: g.births.length })), frames: observation.frames.length } : null,
+    observation: observation ? { file: "observations.json", sha256: hash(observationText), version: observation.version, ...(observation.historyEncoding ? {historyEncoding:observation.historyEncoding} : {}), layers: observation.layers.map((g) => ({ id: g.id, birthCount: g.births.length })), ...(observation.sourceLayers?.length ? { sources: observation.sourceLayers } : {}), ...(observation.trailLayers?.length ? { trails: observation.trailLayers.map(g => ({id:g.id,trackCount:g.tracks.length})) } : {}), ...(observation.contactLayers?.length ? { contacts: observation.contactLayers.map((g) => ({ id: g.id, eventCount: g.events.length })) } : {}), frames: observation.frames.length } : null,
     diagnostics: frames.some((f) => f.color.some((c) => c >>> 24) || f.light.some((c) => c & 0xffffff)) ? [] : [{ code: "DRAWS_NOTHING", severity: "warning", message: "No color or light appears at saved sample times. This observation does not identify the cause.", recovery: { tool: "fx_inspect", arguments: { ref: { kind: "operator", id: "core/color" } } } }],
     aestheticApproval: null, actorPreview: "standing scale reference; acts are not played in this MVP",
   };

@@ -1,6 +1,6 @@
 # 特效库实现与创作能力地图
 
-本文为[产品全景设计](README.md)提供实现依据，并把可复用机制映射到目标能力。当前能力指实际源码；下列全景 API 仍以设计为主；B 阶段已实现其中首批 path/random/curve/domain/schedule/motion/mask/field/image/light 子集，具体签名不能直接用表中目标代替。A 阶段已经登记原有 Painter/颜色/时钟/模块契约，见[公开创作 API](authoring-api.md)和[实施状态](implementation-status.md)。
+本文将两大实现基石与实际生产负担映射到创作能力。现行SDK和观察子集见[公开API](authoring-api.md)与[实施状态](implementation-status.md)；目标表中的概念API不是可直接调用的签名。提炼要求记录原代码、成熟行为、保留/通用化理由、署名和独立创作证据，按[交接工作包](HANDOFF.md#9-后续研发路线具体工作包与验收)推进。
 
 ## 1 库的实际结构
 
@@ -19,9 +19,21 @@
 
 实际模块统计见 [inventory.json](inventory.json)。`create` 入口包含状态模拟与组合，不等于 132 种物理系统；直接导出 `drawBack` 的数量也不覆盖所有实例内部的后层画法。静态导入或文本出现次数不能当作实际使用频率或质量证明。
 
-### 2026-11-06 粒子闭环：从实现路径提炼
+### 1.1 真实历史
 
-两大来源都用于算法与代码能力建设。原库不是只供“看效果”：本轮实际阅读core粒子/模拟器、火焰和奥术辅助模块，以及爆炸、地击、火炬、传送门的实现；下表区分直接复用、通用化和仍待提炼部分。[参考平台当次构建核对](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-particle-loop.md)另记其底层机制及差异。
+从`core/shapes.trail`的过去时刻采样、`arcane/arcane-missiles`的保留历史/命中后消散、`path.strip`的nearest-centerline连续带提炼`trail.history/emitter/sample/draw/observe`。实际共享的栅格器在`src/authoring/strip.js`；`particle.track`提供材质无关的终点/接触corner，原120Hz积分顺序抽到可复用采样表。时间/像素长度、出生锚定网格、断段、停留年龄、死亡后freeze/fade或shrink，以及真实历史观察是可组合部分。原速度streak、程序刀光与旧fx/core不改写。
+
+[基石研究](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-history-trails.md)固定参考平台生产构建及粒子trail/独立ribbon实际代码分支。当前仅effect空间、<=12秒闭区间的时间采样折线；像素裁切是折线插值，无任意空间误差或真刚体带保证。开发参考与独立创作分别验证，不能以通用API数量代替艺术验收。
+
+### 1.2 接触与二次出生
+
+`fire/_lib.sparkAt`、`sim.GRIT/SPARK/BRAND/Bits`与`water/_lib.Drops.onLand`提炼为`contact.floor/trace/events/births/observe`：解析水平面求交、反弹/停留/停止/死亡、稳定父copy与接触ordinal、幂等二次出生，以及保存/冻结事件窗口probe。直接导入`bead/ring`，由`material.waterDrop/ripple`复用原`Drops/Ripples`生命周期画法。`small-explosion`的落地生火用于确认响应与材质可分解。旧core/fx入口与署名保留，没有复制整件效果。
+
+两大基石的具体路径、参考平台的固定构建/hash与差异见[机制研究](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-contact-events.md)。原`fire`二分被推广为竖直转向点分段，去掉人为0.25px避碰偏移；参考平台的法向恢复/切向摩擦拆开为显式参数。范围仅点主体、effect空间、静态水平面、恒加速度/分轴阻力；任意地形与力场碰撞未提供；历史能力见1.1。公开可拆改起点`lab/landing-relay`及contact-response配方属于开发参考，独立创作证据另归档。
+
+### 1.3 粒子、材质与贴图
+
+原库core粒子/模拟器、火焰/奥术辅助模块和爆炸、地击、火炬、传送门为代码来源；[参考平台研究](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-particle-loop.md)记录底层机制与差异。下表说明现行直接复用与通用化。
 
 | 原库实现路径 | 提炼/复用方式 | 新公共入口与证据 |
 | --- | --- | --- |
@@ -32,11 +44,13 @@
 | arcane/_lib.mote、streak；portal的infall/skaters | 速度方向画法直接复用；轨道与时序可由trajectory/offset替换，未冒称把整件portal改成物理解 | material.mote/streak、particle.motion.trajectory/offset；画法等价、物理/视觉位置分离回归 |
 | Painter.sprite；arcane/_lib.squeezed与Painter.each的逆空间采样 | 通用像素轴心、旋转/缩放/镜像、最近采样；纹理、序列选帧与画法分开 | texture.rgba/ascii/sheet/sequence/frame/draw；真实RGBA、轴心与90°旋转回归 |
 | sim里各类粒子独立的生命、尺寸、冷却、延迟与前后层画法 | 脱离固定kind开关，抽出属性与生命周期回调；稳定通道使改色/换资源不扰动出生和速度 | particle.emitter/sample/draw，curve.color；通道独立与显式相关回归 |
-| sim.BRAND落地生火、GRIT/SPARK反弹；fire/_lib.sparkAt连续接触求根 | 已读实现，保留为下一轮接触/衍生/历史尾迹的候选；**本轮未提炼完成** | 后续需精确碰撞时间、事件身份与重复触发证据，不能从radial/attract已实现推断 |
+| sim.BRAND落地生火、GRIT/SPARK反弹；fire/_lib.sparkAt求根 | 点主体/静态水平面的接触与二次出生已提炼，材质独立 | contact与事件窗口probe；范围、精度和幂等身份见1.2，不推广为任意地形/力场碰撞 |
 
 参考平台补足的方向包括通用发射域、独立发射方向、出生范围与速度继承、径向/切向力、延迟汇聚、加权资源、序列帧与轴心、生命周期曲线。实现采用本项目像素/秒/弧度、具名随机与解析/固定tick求值，不复刻它的参数界面或任意内部倍率。库内提炼与外部机制对照共同落在普通代码接口上。
 
 ## 2 代表性效果的制作机制
+
+2026-11-06源轨迹提炼：沿用上述fly/flyV、burn出生源与共享招式时序，增加curve.at/derivative及affine/combine、motion.source/pathSource/sampledSource。出生点速度包括平移与旋转切向分量，birth.source通过现有probe公开；独立作者发现源观测适配负担后，新增motion.observeSource及probe sources真实协议并通过其公开补测；任意函数差分步距显式且误差界未知。原库core/fx未改写。[当轮两基石代码核对](../../experiments/vfx-lab/research/tsnm-spine-particle/2026-11-06-source-trajectory.md)记录具体路径与参考构建；独立创作测评状态以当轮归档为准。
 
 | 参考实现 | 形成表现的机制 | 可复用边界与作者选择 |
 | --- | --- | --- |
@@ -57,7 +71,7 @@
 | [achievement.js](../../src/fx/ui/achievement.js) | 面板进退与回弹、奖章放大闪亮、文字布局与共同扫光 | 层级运动、文字、图标和局部高光都进入能力模型 |
 | [fireball-throw.js](../../src/fx/moves/fireball-throw.js) | 蓄力、移动火球、命中爆炸由共享常量编排，身体动作与停顿配合 | 子效果整体复用与共享事件；作者设计动作与能量过程 |
 
-本次另生成并查看了刀光、瀑布、黑洞、冻结、燃烧转场和成就提示的接触表，用于核对这些机制在画面中的角色。接触表是有限采样，不代替动态节奏审查，也不是全库质量评定。
+代表性接触表用于核对机制在画面中的作用，属于有限采样，不代替动态节奏审查或全库质量评定。完整生产作品及实际观察范围见[生产证据](../../experiments/vfx-lab/productions/2026-11-06-anime-vfx/README.md)。
 
 ## 3 从实现提炼创作原则
 
@@ -79,22 +93,22 @@
 | 能力与概念 API | 输入与输出 | 已有基础及待补部分 |
 | --- | --- | --- |
 | `geometry.band / deform / fracture` | 几何、形变或裂纹规则 → 可查询几何、mask 或片段 | 已有形状、弧带、多边形和裂纹；补统一结果和组合方式 |
-| `domain.sample` | 域、面积或边界、密度、种子和数量 → 稳定样本、切法线、权重 | 大量作品自行循环；补通用域与 mask 密度采样 |
-| `schedule.burst / rate / distance / resident` | 时间区间或轨迹、数量或速率 → 出生记录 | 已有 burst/stream/cycle；补距离发射、身份与绑定 |
-| `attribute.sample` | 属性分布、具名随机和相关规则 → 初始属性 | 已有哈希与 Rng；补隔离通道与显式相关变量 |
-| `curve.scalar / color / envelope` | 输入域、节点、插值、输出单位 → 可绑定函数 | 缓动与局部曲线已存在；补通用契约、超调与范围诊断 |
-| `motion.ballistic / forces / follow / constrain` | 初始状态、力或目标、坐标和时钟 → 轨迹或状态 | 解析 fly、特定粒子和局部求解已存在；补可组合修饰器与执行阶段 |
-| `path.sample / tangent / resample / strip` | 曲线、距离、容差、宽度与区间 → 轨迹或条带 | 已有点集和专用弧带；补通用弧长、切法线和条带 |
-| `field.noise / fbm / tile / loop / gradient / vector` | 空间、种子、频率、范围、周期 → 字段 | 已有标量噪声；补字段类型、向量与组合设施 |
-| `field.arrival / rank` | 距离或排序场、传播规则 → 到达时间或顺序 | 冰波、转场已有特定实现；补单调条件、首次到达与重复经过语义 |
-| `image.make / material.sample` | 程序形状、像素生成器或资产、色带 → 图像或材质 | 保留无外部图片的程序创作；补导入资产、程序材质与缓存契约 |
+| `domain.sample` | 域、面积或边界、密度、种子和数量 → 稳定样本、切法线、权重 | 已有点/扇环/圆/矩形/Path/Mask采样；未知法线不伪造 |
+| `schedule.burst / rate / distance / resident` | 时间区间或轨迹、数量或速率 → 出生记录 | 已有burst/rate/resident/cycle和稳定副本身份；distance待实施 |
+| `attribute.sample` | 属性分布、具名随机和相关规则 → 初始属性 | 现有random具名通道与particle初始属性/data已提供组合，不另要求attribute命名空间 |
+| `curve.scalar / color / envelope` | 输入域、节点、插值、输出单位 → 可绑定函数 | scalar/color、导数与组合已交付；插值边界按实际契约，envelope为概念组合 |
+| `motion.ballistic / forces / follow / constrain` | 初始状态、力或目标、坐标和时钟 → 轨迹或状态 | 已有ballistic/integrate、源轨迹与水平接触；任意约束/碰撞未交付 |
+| `path.sample / tangent / resample / strip` | 曲线、距离、容差、宽度与区间 → 轨迹或条带 | 已有弧长、切法线、重采样/连续带；与真实history分开 |
+| `field.noise / fbm / tile / loop / gradient / vector` | 空间、种子、频率、范围、周期 → 字段 | 已有typed scalar/noise；完整vector与图像流动待实施 |
+| `field.arrival / rank` | 距离或排序场、传播规则 → 到达时间或顺序 | 已有rank/首次arrival与静态衍生出生；任意运动到达/聚合累计待提炼 |
+| `image.make / material.sample` | 程序形状、像素生成器或资产、色带 → 图像或材质 | 已有mask/texture/材质回调与八种成熟画法；外部资产冻结、更多部件和缓存待实施 |
 | `image.scroll / warp / advect` | 图像、位移或速度场、时间和边界 → 图像 | 有局部流动坐标和变形；补可复用图像算法，明确三者区别 |
-| `image.dissolve / mask.change` | 图像、阈值场与前次区域 → 保留、边缘及变化区域 | 已有复杂转场；补中间结果与跨时间差分 |
-| `mask.analyze / distance / outline / morph / combine` | mask 与参数 → 特征、场或新 mask | 已有身体特征、描边和局部分析；补公共类型、距离与形态学 |
+| `image.dissolve / mask.change` | 图像、阈值场与前次区域 → 保留、边缘及变化区域 | 已有消融/首次出生、mask差分与中间结果；区间变化不冒称瞬时事件 |
+| `mask.analyze / distance / outline / morph / combine` | mask与参数 → 特征、场或新mask | 已有make/polygon/derive与布尔/轮廓；身体扫描、完整距离/形态学待提炼 |
 | `pixel.quantize / dither / resize` | 图像、调色板和采样规则 → 像素结果 | 已有色阶、Bayer 和导出放大；补独立算子及坐标语义 |
-| `light.source / halo / along / fromMask` | 几何或 mask、颜色、半径与强度 → 光层 | 已有点线环光、Lights；补包络绑定、来源 mask 和可观察拆分 |
-| `body.analyze / attach / surface` | 身体资产、挂点或对应映射 → 可用特征与变换 | 已有 stockActor、rig 和 onBody；补外部角色适配与能力声明 |
-| `event.contact / crossing / change / chain` | 运动、场或像素变化 → 稳定事件与子效果 | 已有回调和 chain；补事件身份、重放和预算 |
+| `light.source / halo / along / fromMask` | 几何或mask、颜色、半径与强度 → 光层 | 原Painter点线环光与SDK同源mask光可用；任意命名光层隔离未交付 |
+| `body.analyze / attach / surface` | 身体资产、挂点或对应映射 → 特征与变换 | 原actor/rig/act/onBody可复用，lab完整时钟、挂点/表面与自画适配待实施 |
+| `event.contact / crossing / change / chain` | 运动、场或像素变化 → 稳定事件与子效果 | contact事件/二次出生、静态arrival已有；任意crossing、聚合与主体反馈待提炼 |
 | `text.layout / reveal / shine` | 字形、文字、布局与时间 → 几何或像素内容 | 已有 font 与 UI 辅助模块；补可复用布局、动画和字形能力查询 |
 
 ### 4.1 几何与运动的组合
@@ -178,3 +192,24 @@ trail.history({
 这些状态可以分别记录最近验证版本，不用一个笼统的“可复用”标签覆盖全部情况。字段、图像和路径在内部可保留高效数组表示，但对作者暴露其数据含义和稳定身份。
 
 优先包装已经反复使用且边界清楚的辅助函数；为耦合片段先制作候选与对照，再决定抽象。只有真实创作暴露出公共需求时才把专用画法提升为通用 API，避免为了统一而抹掉部件独有的表现力。
+
+## 7 生产方向的提炼与接入顺序
+
+以下都是待实施目标，优先级与[工作包](HANDOFF.md#9-后续研发路线具体工作包与验收)一致。生产作者的代码用于暴露可复用接线与明确艺术选择，不能自动提升为公共API。
+
+| 工作包 | 具体实现来源 | 提炼/接入边界与验收 |
+| --- | --- | --- |
+| 3.1 冻结动画交付 | `tools/lib/fxlib.writeVideo/upscale`；lab.exportRun、manifest帧矩形与保存图集 | 复用编码/放大，适配选定run，不再次求值当前稿；记录帧表、时长、端点与有损/量化，保留原atlas兼容 |
+| 3.2 原尺寸时序观察 | fxlib.contactSheet/pickFrames；lab.eventFrames/compare；probe与app | 事件窗口、分段网格/局部播放，公共调用与分析记录；真实尺度/时刻与实际观看形式，不要求作者解包重排 |
+| 4 视口与定位 | Painter变换/裁切相关写入、lab margin验证、core.actBounds；气功波作者视口包装 | 固定视口/资产边界，统一色光；画内等价，诊断时间/区域，真实声明存在时关联ID |
+| 5.1 动作与挂点 | core.act.createAct/actTiming、rig.skeleton/posedParts、actor、chain，fxlib.renderAct，moves编排 | 共享动作时钟/空间与挂点接motion.source；保留停顿、held pose、前后层，支持替换人物 |
+| 5.2 程序主体 | Painter、rig深度/投影；地爆天星岩块状态与depth、气功波自画主体 | 同一状态连接变换/绘制/观察，先做明确子集；不强制particle或复制调试逻辑 |
+| 5.3 身体场景 | status/_lib身体边界/列顶/行范围/法线；status/frozen；ice/_lib；burn-away/pixel-dissolve | 特征扫描/映射与裂纹/arrival/change衔接；静态与动态身体分别声明，完成两个B场景 |
+| 6.1 可拆技法 | arcane-beam横截面/脉冲/亮丝/源与端部；spell-charge/charge-up；nature/_lib.stoneShape/drawRock | 成熟画法保留署名和表达细节；形状、材质、时序、头尾分别可替换，有隔离预览/依赖和跨题材局改 |
+| 6.2 结构探索 | 现行compare/冻结运行；两部生产作品的局改与艺术问题 | 作者指定参数轴/结构候选，共同条件比较；不只换seed，不自动选最美 |
+| 7 到达与聚合 | shadow/black-hole、explosions/implosion、地击/生长、contact/arrival；地爆天星radiusAt与到达记录 | 明确目标域与轨迹，稳定到达→累计量→主体变化；作者定义质量/增长模型，非通用刚体或守恒模拟 |
+| 8 生产扩展 | texture/资源加载、场/图像、simulation与各目标引擎接入 | 外部资产摘要/冻结、scroll/warp/advect、检查点与实际引擎导入逐项验证 |
+
+参考平台对照重点是发射/出生/运动/寿命/资源/条带的分解、局部与父子空间、延迟汇聚和到达响应。沿[研究目录](../../experiments/vfx-lab/research/tsnm-spine-particle/README.md)核对固定构建与实际代码分支；不能从面板名称推断已有算法保证，也不复制其输出fps耦合或内部倍率。
+
+部件预设以普通代码提供可重排阶段：蓄力/压缩/释放/持续/退场、拔起/输送/到达/聚合/留场。艺术轮廓、材质和模型可替换；稳定公共接线才进入工具。每个闭环都需不读实现的新作者完成相关复杂原创、局改与同run交付，跨题材结果决定可承诺范围。

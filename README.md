@@ -52,14 +52,17 @@ the idea at library scale, with a skill to keep going.
 Every effect is a file in `src/fx/<category>/<name>.js`. The [catalog](docs/CATALOG.md) lists them all.
 
 **Experimental AI authoring lab:** run `npm run lab`, then open `http://127.0.0.1:4173`.
-The [MVP guide](experiments/vfx-lab/README.md) covers nine JSON/MCP tools, queryable SDK contracts, frozen-source validation and replay,
+The [lab guide](experiments/vfx-lab/README.md) covers nine JSON/MCP tools, queryable SDK contracts, frozen-source validation and replay,
 custom comparison windows, history, split color/light export, and the experiment's current limits.
 
 The [AI authoring product proposal](docs/ai-vfx-tools/README.md) describes reference and technique discovery,
 partial reuse, creative operators, observation tools, and a phased validation plan. Implemented SDK contracts
-and path/mask/dissolve, particle, texture and material operators are documented in the [public API guide](docs/ai-vfx-tools/authoring-api.md);
-the broader roadmap remains a proposal.
-New maintainers should start with the [development handoff](docs/ai-vfx-tools/HANDOFF.md), including a clean-checkout walkthrough and the next concrete work packages.
+and path/mask/dissolve, shared source trajectories with velocity, floor-contact events and secondary births, reconstructible history trails, particle, texture and material operators are documented in the [public API guide](docs/ai-vfx-tools/authoring-api.md);
+the broader capabilities are planned rather than callable APIs.
+The roadmap uses the [Kamehameha and Chibaku Tensei production logs](experiments/vfx-lab/productions/2026-11-06-anime-vfx/README.md)
+to prioritize frozen animation delivery, native-scale temporal inspection, explicit viewports, action anchors,
+procedural subjects, reusable techniques and arrival-driven assembly. New maintainers should start with the
+[development handoff](docs/ai-vfx-tools/HANDOFF.md) for the current implementation order, source paths and independent creator gates.
 
 ## use one.
 

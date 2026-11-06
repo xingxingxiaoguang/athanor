@@ -206,6 +206,10 @@ const colorJitter=random.unit({...key,channel:'color'}); // 不改变 vx
 
 `curve.color({points,input='particle.age01',interpolation='hold',extrapolation='clamp'}) → ColorCurve`。节点为 `[x,hex或Color32]`，严格递增。hold保留有限色阶；linear/smooth分别逐RGBA字节插值、取整，不做感知色彩空间转换。外推只支持clamp/error；sample返回Color32。可直接绑定particle.material.tint。来自库内热色优先冷却阶梯和混色色带的公共化。
 
+ScalarCurve另有 `at(x,{side='right'}) → {value,derivative,side,discontinuity}` 与 `derivative(x,{side='error'}) → number`。导数单位为outputUnit/input单位；如pixels/local.seconds为px/s，radians/local.seconds为rad/s。side为left/right/error；at同时选择单侧值与导数，hold跳变处left取得旧值、right取得新值；sample仍保持原有右连续取值。discontinuity为null/corner/jump；error在左右值或导数不同时报CONTRACT_MISMATCH并给出选侧建议，不把跳变解释成有限穿越速度。clamp区间外导数0，extend使用首尾割线；extrapolation:error的端点只有区间内单侧可用，使用该侧，不凭空外推。smooth节点与夹边停顿导数0。
+
+`curve.affine(value,{scale=1,offset=0,outputUnit=value.outputUnit或'unitless'}) → ScalarSignal`：数值或ScalarCurve/ScalarSignal的输出乘scale加offset，导数乘scale；不改变输入时钟。`curve.combine({operation='sum'|'product',values,outputUnit='unitless'}) → ScalarSignal`：非空数值/标量列表，使用和/乘积法则；零因子不通过除法求导。所有非数值输入必须使用同一input；不隐式换算秒与age01。ScalarSignal同样提供sample/at/derivative，可绑定材质、源坐标或角度。outputUnit是作者声明，乘积与仿射变换不自动推断物理量纲。
+
 ### example
 
 ```js
@@ -260,13 +264,27 @@ for(const b of schedule.alive(births,t,{life:.6})) { /* b.id/age/age01，绘制�
 
 ### overview
 
-导入 `{motion}`。解析弹道/分轴阻力从core.fly与fire/_lib.drift提炼；力场保留加速度、速度、位置的明确顺序，并使用可重放固定时钟。碰撞和接触衍生仍待后续闭环。
+导入 `{motion}`。解析弹道/分轴阻力从core.fly与fire/_lib.drift提炼；力场保留加速度、速度、位置的明确顺序，并使用可重放固定时钟。静态水平面接触与二次出生见core/contact；力场碰撞尚未提供。
 
 ### contract
 
 `motion.ballistic({position,velocity,acceleration=[0,0],drag=0,age}) → {position,velocity}`。位置艺术像素，速度px/s，加速度px/s²，drag为非负1/s或`[dragX,dragY]`，age 非负秒。解析求解线性阻力与恒加速度，含接近0阻力的数值稳定分支，不依赖更新频率。分轴阻力保留烟柱与火团的非均匀漂移。
 
 `motion.along(path,{age,duration,from=0,to=1,easing=u=>u}) → PathSample`。age/duration 秒，duration>0，归一年龄夹到0..1，easing 必须返回0..1；from/to可反向但须落在路径范围。返回位置、切线/法线/弧长，不伪造未知导数的速度。
+
+`motion.source({position=[0,0],rotation=0,parent?,space=parent.space或'effect',side='right'}) → SourceTrajectory`。position的x/y及rotation各为有限常量或秒域ScalarCurve/ScalarSignal，接受local.seconds或scene.seconds；本实验均映射effect秒，不能直接绑定age01/path.s。坐标为px、角度为**不折返的弧度**。`source.sample(time,{side=source.side}) → {position,velocity,rotation,angularVelocity,space,derivative}`；time可负（用于前置出生），位置/速度为px/px/s，角度/角速度为rad/rad/s。source与可见主体共用，不需要再手写导数。默认右时间侧，left取左时间侧，error拒绝不可微处；derivative保存method/side及各通道corner/jump提示。跳变不是连续运动，也没有有限的“跳跃速度”。
+
+parent必须是同空间SourceTrajectory。子位置先旋转再平移；速度=`父速度+R*局部速度+父角速度*[-旋转后y,旋转后x]`，角度/角速度相加。父子统一使用请求的时间side，父derivative元数据保留在derivative.parent。用 `motion.source({parent:pivot,position:[radius,0]})` 可构造移动轴上的针尖，作者仍决定几何、开合曲线与时序。不会自动平滑折点或自动对齐运动方向。
+
+`motion.pathSource(path,{progress,rotation=0,parent?,space=path.space,side='right',boundary=closed?'wrap':'clamp'}) → SourceTrajectory`。progress为秒域标量信号或常量，值是归一化**弧长**，导数是1/s；速度为 `切线*path.lengthPx*progress导数`，不是贝塞尔参数速度。geometry沿用Path的分段直线近似，Bezier误差仍以Path容差为准。默认不沿切线自动旋转；rotation独立指定，避免把折线切线伪造成平滑角速度。折点的left/right按**时间**取侧，反向运动会换用相反的几何段；停在折点时速度0。clamp外停止，端点按时间侧取停止/运动速度；wrap接缝同样报告corner，开放路径wrap还报告jump并取对应端点。边界error拒绝越域。非零速折点可用side:error拒绝，也可明确选侧；不会替作者圆角。
+
+`motion.sampledSource({sample,stepSeconds,range,parent?,space='effect',side='right'}) → SourceTrajectory`：任意纯 `sample(t)→{position,rotation?}` 的**显式近似**出口。必须给固定秒距stepSeconds>0和有限`range:[min,max]`，跨度至少2个步距；不使用输出fps或上次调用。内部用中心差分，靠近范围端点改用前向/后向一阶差分，超出range报错；返回derivative.method='finite-difference'、实际stencil、stepSeconds、range、errorBound:null、discontinuities:'unchecked'。对任意函数无法给出通用误差界或自动识别跳变，缩小步距也可能放大舍入误差；不要用它认证连续性。rotation需先由作者保持展开的弧度，不能把π/-π换边当真实高速旋转。需要精确自写导数时，原emitter.transform回调仍直接接受position/velocity/rotation/angularVelocity。
+
+数值差分还返回实际`derivative.sampleTimes:[lo,hi]`；秒距小到浮点时间无法区分时，错误直接定位stepSeconds并提示增大步距。解析导数溢出同样报非有限数值错误，不返回Infinity。路径折点识别只保留浮点舍入量级的容差，不把可区分的近邻时刻强行吸附到折点。
+
+`motion.observeSource(source,time,{id}) → SourceObservation`：为真实SourceTrajectory声明稳定非空字符串ID，返回其position/velocity/rotation/angularVelocity/space/derivative及kind/id。作品的`observe(t,o)`可返回`{sources:[motion.observeSource(axis,t,{id:'axis'}), ...]}`，也可与particles数组共存；不需要造不绘制的粒子。当前只接受effect空间，其他空间必须显式转换，最多64个稳定来源；来源ID/space须在全run保持，所有状态是有限JSON。
+
+`fx_probe({run,view:'sources',layers?:[sourceId],fields?,at?,sampling:'saved'|'replay',limit=12})`查看真实声明源；可查询position/velocity/rotation/angularVelocity/space/derivative，默认前五项（不含space）。layers在本视图指source ID，不能传particles；返回sources清单、各时刻states、单位、实际时间/误差、选择/省略数量和原尺寸点位图，不返回伪造births。位置点附5px朝向线及0.05秒速度线，其比例在scope中说明；不是实际路径或连续动画。默认读保存证据，显式replay用冻结后端；仅有旧粒子/像素的run返回CAPABILITY_UNSUPPORTED，不从粒子反推源轨迹。保存的粒子与源观测共享16MB预算。
 
 `motion.radial({center=[0,0],strength=0,tangential=0,startAge=0}) → force(state)`。strength正向外、负向内，tangential沿`[-dy,dx]`，单位px/s²；中心处返回零。center可为常量或`state=>[x,y]`。startAge为粒子秒龄。出生域和发射方向与力场独立。
 
@@ -279,6 +297,20 @@ for(const b of schedule.alive(births,t,{life:.6})) { /* b.id/age/age01，绘制�
 ```js
 const q=motion.ballistic({position:b.position,velocity:[12,-20],acceleration:[0,60],drag:.8,age:b.age});
 p.rect(q.position[0],q.position[1],2,1,C[3]);
+```
+
+移动源可执行参考：effect inspect `lab/source-shuttle`。最小组合如下（模块顶层创建轨迹，draw与emitter共享它）：
+
+```js
+const opening=curve.scalar({points:[[.2,0],[.8,1],[1.1,1],[1.7,0]],interpolation:'smooth'});
+const angle=curve.affine(opening,{scale:.8,offset:-1.6,outputUnit:'radians'});
+const pivot=motion.source({position:[0,-40],rotation:angle});
+const tip=motion.source({parent:pivot,position:[24,0]});
+const emitter=particle.emitter({id:'tip',births:schedule.rate({id:'bits',start:.3,end:1.5,rate:20}),
+  transform:tip,inheritVelocity:.7,initial:{life:.4,speed:8}});
+// draw中的可见针尖用 tip.sample(t).position；particle.draw另选texture或custom draw。
+// probe births[].source可查源位置/速度/角速度、实际出生点速度和导数策略。
+// export function observe(t){return {sources:[motion.observeSource(tip,t,{id:'tip'})]};}
 ```
 
 ## core/mask
@@ -412,13 +444,15 @@ texture.draw(p,smoke,{position:[4,-20],rotation:.6,scale:[2,1],age01:.7,opacity:
 - births来自schedule或image.dissolveEvents，有唯一字符串id和born。已有position优先；否则从domain取样；都没有则[0,0]。出生位置采样以birth.randomId或id为键，不因列表重排或添加其他粒子而漂移。cycle的同slot副本共享随机属性、身份仍分开。
 - domain使用domain公开契约；另有`domain.point({id,position=[0,0],space='effect'})`、`domain.sector({id,radius,innerRadius=0,angle=0,spread=PI/2,space='effect'})`，sector按扇环面积均匀采样，仅支持area。domain.sample还可传与count等长、唯一的`ids`，用身份而不是数组序号采样；返回仍有index。
 - direction是`{mode:'angle'|'outward'|'inward'|'normal'|'tangent',angle?,spread=0,center=[0,0]}`或`context=>[dx,dy]`。angle模式默认向上(-PI/2)，其他模式angle默认0为相对偏转；spread是总弧度宽度。in/outward以center独立计算，normal/tangent仅在域提供时可用，不为mask伪造法线。零speed不要求方向。也可在initial直接给velocity。
-- transform为静态或`birthTime=>{position=[0,0],rotation=0,velocity=[0,0]}`，只在出生时采样。域坐标/初速度先旋转，再平移位置并将源velocity*inheritVelocity加到初速度。源velocity由作者明确提供px/s，不从输出帧猜导数。出生后默认脱离源，不自动追随。
+- transform为静态对象、`birthTime=>{position=[0,0],rotation=0,velocity=[0,0],angularVelocity=0}`或motion的SourceTrajectory，只在出生时采样。域坐标/初速度先旋转，再平移位置；实际出生点的源速度为`velocity+angularVelocity*[-旋转后域y,旋转后域x]`，乘inheritVelocity加到初速度。旧回调不声明angularVelocity时保持原来仅继承平移速度的行为。SourceTrajectory接管导数，也可继续显式提供velocity(px/s)/angularVelocity(rad/s)；不从输出帧猜速度。出生后默认脱离源，不自动追随。源声明space时须与出生域/已有birth.space一致。Birth中的source保存位置、平移速度、旋转/角速度、pointVelocity和可用的derivative策略，fx_probe返回的births可直接查询；这不是任意场/绘制层的观测协议。
 - initial可为对象或`context=>object`。life(秒，默认birth.life或1)、speed(px/s，默认0)、scale(默认1)、scaleY(相对Y倍率，默认1)、rotation(弧度，默认0)、spin(rad/s，默认0)、opacity(默认1)、frameOffset(整数帧，默认0)各自支持常量、`[min,max]`或`context=>number`。velocity是常量向量或回调，覆盖speed/direction。data为JSON对象或回调；先求data再求各属性。所有回调收到`{birth,index,seed,data,position,normal?,tangent?,source,rand(channel,min=0,max=1)}`（position为变换前域坐标，source为出生源变换）；同channel可显式相关、不同channel互不影响。frameOffset范围要用`c=>Math.floor(c.rand('frame',0,3))`，不自动把连续范围取整。scale/scaleY可负值用于镜像。opacity最终必须0..1。
 - textures为`[{texture:Texture或Sequence,weight=1}]`出生加权选资源，weight>0；使用独立texture通道。否则用material.texture。没有贴图也可仅计算/观察，绘制时需custom draw。
-- motion的acceleration/drag调用ballistic；forces/kill调用固定120Hz integrate。force可直接使用motion.radial/attract或自写。`trajectory(state)=>{position,velocity,alive?}`可完整替换求解，velocity必须明确提供。`offset(state)=>[dx,dy]`最后加到渲染位置；basePosition保留物理位置，velocity不包含视觉偏移导数。此阶段没有内置碰撞、历史尾迹、跟随/约束或运动阶段列表。
-- material的scale/scaleY/rotation/opacity/tint支持常量、Curve或`state=>value`。ScalarCurve/ColorCurve的particle.age01映射年龄，local.seconds/scene.seconds在本实验均映射effect time；path.s须作者显式回调。scaleX=birth.scale*material.scale，scaleY=birth.scale*birth.scaleY*(material.scaleY或material.scale)；旋转=birth.rotation+spin*age+material.rotation。opacity=birth.opacity*material.opacity，严格0..1。alignVelocity=true把物理速度朝向加到旋转。tint是hex/Color32或ColorCurve；tintMode='multiply'|'replace'。blend可常量或回调返回dither/soft/additive。texture可为Texture/Sequence或`state=>resource`，支持火团转烟等分阶段材质。
+- motion的acceleration/drag调用ballistic；forces/kill调用固定120Hz integrate。force可直接使用motion.radial/attract或自写。`trajectory(state)=>{position,velocity,alive?}`可完整替换求解，velocity必须明确提供。`offset(state)=>[dx,dy]`最后加到渲染位置；basePosition保留物理位置，velocity不包含视觉偏移导数。`contact:contact.floor(...)`提供解析水平面接触，事件与二次出生见core/contact；不能与forces/kill/trajectory混用。历史尾迹见core/trail；尚无任意形状碰撞、完整约束或运动阶段列表。
+- material的scale/scaleY/rotation/opacity/tint支持常量、Curve或`state=>value`。ScalarCurve/ScalarSignal/ColorCurve的particle.age01映射年龄，local.seconds/scene.seconds在本实验均映射effect time；path.s须作者显式回调。scaleX=birth.scale*material.scale，scaleY=birth.scale*birth.scaleY*(material.scaleY或material.scale)；旋转=birth.rotation+spin*age+material.rotation。opacity=birth.opacity*material.opacity，严格0..1。alignVelocity=true把物理速度朝向加到旋转。tint是hex/Color32或ColorCurve；tintMode='multiply'|'replace'。blend可常量或回调返回dither/soft/additive。texture可为Texture/Sequence或`state=>resource`，支持火团转烟等分阶段材质。
 
-`particle.sample(emitter,time,{includeInactive=false}) → State[]`。纯查询，可乱序跳转。State有id/index/born/life/age/age01/time/data/status、position/basePosition/velocity/simulationAge/offset、scale/rotation/opacity/tint/blend/tintMode、texture帧摘要和sprite实际Texture。寿命区间[born,born+life)，默认只返回alive。includeInactive还返回pending/expired/killed，其未存在的年龄/材质不伪造；killed保留停止时的位置/速度与killedAge。
+`particle.track(emitter,particleId,{position='render',end?}) → ParticleTrack`：不求材质的闭区间轨道，含id/born/end/space、parent:{layer,particle,copy}、positionMode和knots。sample(effectSeconds)仅接受[born,end]，返回position/velocity/simulationTime；可取准确终点，不伪造expired粒子State。render包括motion.offset，physical只取物理位置，velocity均为物理速度。解析/接触轨道复用原求解；force/kill轨道复用相同120Hz积分顺序并保存最多1441个tick，乱序查询不重跑整条历史；simulationTime报告实际tick。end默认首次接触kill/force kill或自然寿命，stop/settle继续到寿命；可显式提前结束，不能晚于首次死亡。replacement trajectory必须提供已知绝对end；若在此前返回alive:false则拒绝，不猜任意函数的首次死亡。可用core/trail自定义track以null表示缺段。仅effect空间、每粒子<=12秒。contact事件自动成为corner knots，精确event.time查询使用该事件的age返回撞后状态，不因born加减舍入落到撞前；任意视觉跳变需显式break，不推断连续性。
+
+`particle.sample(emitter,time,{includeInactive=false}) → State[]`。纯查询，可乱序跳转。State有id/index/born/life/age/age01/time/data/status、position/basePosition/velocity/simulationAge/offset、scale/rotation/opacity/tint/blend/tintMode、texture帧摘要和sprite实际Texture。alive State另有只读使用的`birth`引用：已解析出生属性及来源，接触子出生可直接读取`state.birth.event`（完整父接触）、`birth.parentEvent/parentParticle/copy`，不必在initial.data重复搬运。回调不可修改birth或共享event；艺术派生参数仍可放data。contact运动还给出`contact:{phase,count,lastEventId}`。`particle.observe`不复制整份birth到每帧State；probe的births表保留同样因果信息，fields不接受birth/event。寿命区间[born,born+life)，默认只返回alive。includeInactive还返回pending/expired/killed，其未存在的年龄/材质不伪造；killed保留停止时的位置/速度与killedAge。
 
 `particle.draw(p,emitter,time,{draw?,filter?}) → alive States`。默认画贴图；draw(p,state)可换任意Painter或material画法。filter(state)用于作者自己的遮挡/层次规则。`particle.observe(emitter,time) → ParticleObservation`返回稳定births及去掉像素资产字节的states，适合下述协议。
 
@@ -444,7 +478,7 @@ export function observe(t,o){return {particles:[particle.observe(make(o),t)]};}
 
 可选公开协议：作品导出纯函数`observe(effectTime,resolvedOptions) → {particles:[particle.observe(...),...]}`，不调用Painter、不修改作品。render在实际绘制时间执行，校验每组稳定id/births与每出生恰一条状态，写observations.json及SHA256；单次<=16MB，超限明确报错。循环结尾observe接收与draw相同的wrapped localTime。普通旧作品不必补observer。
 
-`fx_probe({run,at?,view='color',sampling='saved',layers?,particles?,fields?,limit=12})`：at为`{times:[seconds],clock:'effect'}`或`{event,offsets,clock:'effect'}`，最多24个时刻，默认用已选事件帧。preview/color/light/combined直接读单run保存图，支持旧作品，不需重复传run；这四视图不接受粒子fields/layers或replay。particles/trajectory默认读保存观测，即使当前草稿无法导入仍可查；sampling:'replay'明确在冻结源码重算，可查非保存时刻。layers为已声明粒子组ID，particles为字符串birth ID；默认取声明顺序前limit条，结果报告全部数与省略数。fields可选status/position/basePosition/velocity/age/age01/simulationAge/opacity/scale/rotation/tint/blend/tintMode/texture/offset/data，结果附单位、births、每时刻全组数量和选中状态。tint为Color32整数，blend/tintMode为已声明状态；custom draw可以自行改画法，这些字段不从最终像素反推自写shader。未知组/身份/字段报错。trajectory按时间连接**离散观察点**，不是推断连续物理轨迹；稀疏时刻只提供稀疏证据。at范围外会明确夹边。无observer的旧run仍可查保存图，不从最终像素反推身份；不支持任意mask/field、内部绘制层隔离、去修改器或动作播放时钟。
+`fx_probe({run,at?,view='color',sampling='saved',layers?,particles?,fields?,limit=12})`：at为`{times:[seconds],clock:'effect'}`或`{event,offsets,clock:'effect'}`，最多24个时刻，默认用已选事件帧。preview/color/light/combined直接读单run保存图，支持旧作品，不需重复传run；这四视图不接受粒子fields/layers或replay。particles/trajectory默认读保存观测，即使当前草稿无法导入仍可查；sampling:'replay'明确在冻结源码重算，可查非保存时刻。layers为已声明粒子组ID，particles为字符串birth ID；默认取声明顺序前limit条，结果报告全部数与省略数。fields可选status/position/basePosition/velocity/age/age01/simulationAge/opacity/scale/rotation/tint/blend/tintMode/texture/offset/data/contact，结果附单位、births、每时刻全组数量和选中状态。tint为Color32整数，blend/tintMode为已声明状态；custom draw可以自行改画法，这些字段不从最终像素反推自写shader。未知组/身份/字段报错。trajectory按时间连接**离散观察点**，不是推断连续物理轨迹；稀疏时刻只提供稀疏证据。at范围外会明确夹边。无observer的旧run仍可查保存图，不从最终像素反推身份；不支持任意mask/field、内部绘制层隔离、去修改器或动作播放时钟。
 
 ### pitfalls
 
@@ -454,7 +488,7 @@ export function observe(t,o){return {particles:[particle.observe(make(o),t)]};}
 
 ### overview
 
-导入 `{material}`。直接调用原库成熟实现（fire/_lib的firePuff/smokePuff/ember/spark，arcane/_lib的mote/streak），不是重新近似这些效果。只增加公共粒子State适配，保留原文件上游来源与MIT署名。可逐粒子换画法，也可完全自写Painter。
+导入 `{material}`。直接调用原库成熟实现（fire/_lib的firePuff/smokePuff/ember/spark，arcane/_lib的mote/streak，water/_lib的bead/ring及Ripples年龄包络），不是重新近似这些效果。只增加公共粒子State适配，保留原文件上游来源与MIT署名。可逐粒子换画法，也可完全自写Painter。
 
 ### contract
 
@@ -466,6 +500,8 @@ export function observe(t,o){return {particles:[particle.observe(make(o),t)]};}
 - `material.spark(p,s,{colors,glow=1})`：按物理速度伸长的亮头与冷尾，随age冷却，glow为原光倍率。
 - `material.mote(p,s,{tint=s.tint,size=1,glow=.4})`：速度方向暗尾/亮体，末段淡出，glow为原函数强度。
 - `material.streak(p,s,{tint=s.tint,maxLength=7,glow=.4})`：白头/色体/暗点尾，速度决定长度。state.opacity控制覆盖；保留作者自己的生命周期曲线。
+- `material.waterDrop(p,s,{colors=WATER,size=2,glow=0})`：直接复用bead速度尾迹/高光水珠，以及Drops的小光池。colors按深→亮，重采样8阶；size的1/2/3档沿用原画法。默认无附加光，glow为原光倍率。
+- `material.ripple(p,s,{colors=WATER,radius=18,startRadius=1,sy=.22,n=2,gap=3,strength=1,hot=.1,glint=0,seed=1,glow=0})`：直接复用ring，及Ripples的半径`start+(radius-start)*(1-(1-age01)^2.6)`、强度`strength*(1-age01)^1.7`和gap包络。radius/startRadius为非负px，sy>0为纵向投影比例，n为1..16整数，gap/strength/hot/glint非负；hot是秒，按state.age（否则age01*life，缺life用1秒）判断。seed固定纹理，不从全局顺序取种子。默认glow=0，glow=1保留原光。颜色与运动可独立替换，不代表真实流体；需要不同增长法可自写draw。
 
 ### example
 
@@ -479,4 +515,88 @@ particle.draw(p,hotDebris,t,{draw(p,s){
 
 ### pitfalls
 
-这些是可选、已归纳的库内画法，不是新的强制粒子类型。motion仍独立。需要完整旋转、多帧形变或自定义轴心时使用texture；需要新的像素shader时自写draw。未声称六种画法都经过新独立创作案例；见创作测评的实际覆盖。
+这些是可选、已归纳的库内画法，不是新的强制粒子类型。motion仍独立。需要完整旋转、多帧形变或自定义轴心时使用texture；需要新的像素shader时自写draw。未声称所有画法都经过独立创作案例；见创作测评的实际覆盖。
+
+## core/contact
+
+### overview
+
+从`athanor/authoring`或本地index导入`{contact}`。从fire/_lib.sparkAt的解析飞行/接触二分、core/sim的反弹/停留/落地，以及water/_lib的落地涟漪提炼。保留原实现与上游MIT署名。接触是稳定的因果记录，二次出生消费记录，不在draw或逐帧回调中累积。当前只处理**点主体与静态水平面**、恒加速度和分轴线性阻力；不是任意形状/地形/力场碰撞。
+
+### contract
+
+- `contact.floor({id='floor',y=0,response='bounce',restitution=.45,tangentRetention=.7,settleSpeed=3,maxEvents=32,timeTolerance=1e-8}) → ContactFloor`。本地effect空间，+y向下，合法区域y<=floor.y，法线[0,-1]。response为bounce/stop/kill；bounce在法向翻转并乘非负restitution（可>1），切向乘有限tangentRetention（可负、可>1，均为显式艺术选择）。反弹后法向速度绝对值<=settleSpeed(px/s)即settle，stop/settle都冻结位置并置两轴速度0，寿命继续；kill无后续状态，velocityAfter为null。maxEvents为每父粒子1..64次预算，超出明确BUDGET_EXCEEDED，不截断；不插入旧算法的0.25px避碰跳跃。
+- `contact.trace({position,velocity,acceleration=[0,0],drag=0,born=0,life,floor,layer='effect',particle='body',copy=null,randomId=particle,data=null}) → ContactTrack`。单位px/px/s/px/s²，drag为非负1/s或[x,y]，life为正秒且<=12；data为有限JSON。出生在面下方报错，不自动投影。按完整寿命一次构建分段解析轨道；水平面求交在竖直速度转向点拆单调区间，再二分到浮点精度，避免两端都在面上方时漏掉中间的下穿。precision是双精度ballistic方程的父年龄时间夹逼范围；timeErrorMax保留段内求根宽度与最终ageBracket宽度两者的较大值，避免分段偏移的舍入扩张少报或折叠成伪零误差，不是任意精度证明。timeTolerance是允许夹逼宽度；64次细分仍达不到时拒绝。
+- `track.sample(age)`给出position/velocity/alive/simulationAge/killedAge及contact:{phase,count,lastEventId}，age为非负秒。事件时刻采用**撞后**状态；phase为flight/resting/killed/expired。初始恰在面上、向下或静止且向下加速，接触在age=0；初始朝上先离开，后续返回再触发。沿向下运动到达面的零法向速度接触也可产生事件。寿命为[born,born+life)，**接触恰在死亡时刻则死亡优先，不产生接触或子出生**。已杀死粒子在其原寿命之后仍沿用particle的expired分类，历史事件不删除。
+- 粒子入口为`particle.emitter({...,motion:{acceleration,drag,contact:floor}})`，构建稳定轨道并共享给draw/sample/observe。不能同时使用forces/kill/trajectory，返回CAPABILITY_UNSUPPORTED；offset可用，但只改变视觉位置，不改变接触点、速度和事件。事件/来源空间当前为effect；不是贴图尺寸扫掠，作者需按真实接触点选择出生坐标和面的位置。
+- `contact.events(emitter或track,{from?,to?}) → ContactEvent[]`。每次纯读取完整或`[from,to)`绝对effect秒窗口，返回副本，不依赖调用顺序或输出fps。每条含id、kind:'contact'、layer、particle、copy、randomId、collider、ordinal、time、age、position、normal、velocityBefore、velocityAfter、response、父data，以及precision:{method,timeTolerance,ageBracket,timeErrorMax}。ordinal每父copy从0开始，ID是无歧义的layer/parent/collider/ordinal元组；不同周期copy不同ID，randomId按原slot保留。事件数全emitter最多10000。
+- `contact.births({id,events,count=1,delay=0,select=e=>true}) → Birth[]`。count为0..10000整数或纯event=>整数；delay为非负秒。出生时刻为event.time+delay，position/normal来自接触；保留event、parentEvent、parentParticle、copy。多次传入同一事件会去重，重复ID但内容冲突报错；子ID由id/eventID/子index决定，周期copy的randomId复用父slot/collider/ordinal。返回稳定排序、最多10000条，可直接作为另一emitter的births。自定义draw可直接用`state.birth.event.ordinal/collider/velocityBefore`及`state.birth.parentEvent/parentParticle`控制画法，不必复制到data（不要修改这些共享出生信息）。不会隐式继承父速度；用initial回调的`context.birth.event`选择撞前/后速度、法线或data，也可direction:{mode:'normal'}。从未构造的父周期copy不会被自动补算，周期窗口需覆盖子寿命所需的历史父事件。
+- `contact.observe(emitter) → ContactObservation`。在作品`observe(t,o)`中返回`{contacts:[contact.observe(primary)],particles?:...,sources?:...}`；接触父ID与完整事件表在整run保持不可变（不要只返回截至t的累计事件）。空事件表也是有效声明。事件表保存一次，与粒子/源观察共享16MB；不从旧像素或隐藏回调推断。
+- `fx_probe({run,view:'contacts',window?:{from,to},layers?:[groupId],particles?:[parentId],sampling='saved',limit=12})`返回完整events、units、窗口和选择/省略数量，limit最多64。window默认[0,run.duration)，支持负/超范围请求但报告夹边；from>to拒绝。该视图不接受at/fields，事件带自己的求解时间，不取最近输出帧。sampling:saved读带hash的静态事件表；replay用冻结后端。旧run无声明明确不支持。原尺寸点位图的入/出速度线代表0.05秒，不是连续历史轨迹。保存事件与二次出生可在独立窗口查询、乱序跳转或冻结复验，不重复触发。
+
+### example
+
+```js
+import {contact,particle,material} from '../../../src/authoring/index.js';
+const surface=contact.floor({id:'pool',response:'kill'});
+const drops=particle.emitter({id:'drops',births:[{id:'drop/0',born:.1,position:[0,-24]}],
+  initial:{life:2,velocity:[8,-12]},motion:{acceleration:[0,120],contact:surface}});
+const rings=particle.emitter({id:'rings',births:contact.births({id:'ring',events:contact.events(drops)}),initial:{life:.7}});
+export function draw(p,t){
+  particle.draw(p,drops,t,{draw:(p,s)=>material.waterDrop(p,s,{glow:0})});
+  particle.draw(p,rings,t,{draw:(p,s)=>material.ripple(p,s,{radius:14,glow:0})});
+}
+export function observe(t){return {particles:[particle.observe(drops,t),particle.observe(rings,t)],contacts:[contact.observe(drops)]};}
+// 补完整meta即可使用；完整可运行组合可effect inspect lab/landing-relay。
+```
+
+### pitfalls
+
+接触数据是物理点位置；纹理、视觉offset和非粒子主体可能越过画布，不能用中心点替代完整像素边界。出生在地面且零速度的子粒子若也选带重力的接触，会在age=0产生支持接触；这是显式规则，避免无意递归构造响应。多级响应通过新的emitter及同一事件记录组合，不提供无限递归监听器。自写force/地形/半径/斜面/容器与真实历史拖尾仍未交付。低辉光、不同材质与非粒子响应都可由作者决定。
+
+### evidence
+
+core/contact公开契约、CLI/MCP/HTTP同一Schema、contact.test.mjs技术回归与独立创作者归档分别说明范围。现有库源码不被重写；源算法和当轮参考平台构建见实现地图/研究记录。技术测试不是艺术认证。
+
+## core/trail
+
+### overview
+
+导入`{trail}`。这是真实历史位置的**采样折线**，区别于material.streak的速度外推或独立Path的头尾条带。通用化core/shapes.trail的过去时刻查询、arcane-missiles的历史路径/命中后消散，以及path.strip的连续像素画法；保留MIT/Hugo Duprez来源。普通JS可定义任意纯轨道和画法，没有固定作品DSL。
+
+### contract
+
+- `trail.history(track,{id=track.id,length={seconds:.4},stepSeconds=1/120,death={mode:'fade',seconds:.2},maxSamples=2048}) → HistoryTrail`。track为`{id?,born,end,space='effect',sample(time),parent?,positionMode?,knots?}`；sample接受闭区间effect秒，返回`{position:[x,y],velocity?,simulationTime?,breakBefore?}`或null（缺段）。position为effect像素，velocity若有为px/s，simulationTime默认请求时刻；不由位置差伪造速度。born/end有限，0<=end-born<=12，可负出生；单点轨道有效但不画虚假圆点。采样和回调必须纯，不依赖draw顺序或输出fps。可直接传particle.track，也可传非粒子自写轨道/source.sample。
+- length只接受一种单位：`{seconds:正秒}`或`{pixels:正像素}`。seconds截取历史时间窗口；pixels从最新点向后按**已采样折线长度**裁切，末端可在段上线性插值，标记interpolated:true/source:'polyline-trim'，不是新物理采样；不将首尾直线距离当走过的长度。恰好落在已有样本时直接保留该点，不生成重复端点；插值速度仅在两端均声明时给出。断段不计跨越距离。当前没有点数长度/空间误差自适应保证。
+- stepSeconds为显式正秒，网格固定在born+k*stepSeconds；额外采样窗口边界、终点及knots。不是每输出帧加一条。knots为`[{time,kind:'corner'|'break',...}]`，time在轨道内；corner保留真实转折位置，break从该时刻开始断段，不连接跳跃，跳跃前末段止于前一个样本（未伪造左极限）。同一时刻有多个knots时break优先于corner，与输入顺序无关。sample返回null后下一有效点也断段。已知急转/高频运动应选适当step或提供knots；不能声称恢复任意采样间运动。
+- death.mode为fade/shrink/clear。fade在end冻结最后窗口、整体线性淡出death.seconds，t>=end+seconds消失；shrink仅seconds长度，从当前时间继续过期旧点，t>=end+length.seconds消失；clear在t>=end立即删除。宽度/颜色仍由作者控制；历史年龄historyAge在freeze期间保持，ageSeconds继续增长。pixels不支持shrink，明确拒绝；可freeze/fade或自写策略。
+- `trail.emitter(emitter,{id=emitter.id,position='render',ends={},...historyOptions}) → TrailSet`为每条出生创建particle.track和独立尾迹；稳定ID为id与父layer/birth的元组，保留copy。position为render/physical；ends按birth ID给replacement trajectory或提前结束的绝对时间。最多256条track；不会把不同父轨道连起来。父出生及其data可从particle观察查询，不复制像素资源进历史。
+- `trail.sample(history或set,time,{tracks?:[trailId]}) → TrailFrame`；含id/time/trails/evaluationCount/pointCount。每条含id/parent/space/positionMode、phase:pending/alive/fading/expired、opacity、window:{from,to,sampledFrom}、lengthPx、sampleCount、sampling及points。点按**最旧→最新**，含time/simulationTime/position/可选velocity、source、interpolated、breakBefore、distancePx、s、time01、ageSeconds、historyAge。s为保留折线累计长度归一化0..1（全静止为0）；time01为保留时间跨度0..1；ageSeconds=time-point.time，historyAge=headTime-point.time。停留的相同位置但不同时间不删除，不丢失驻留年龄。pending/expired无点，不伪造位置。全静止点列不画圆点。
+- 预算：maxSamples为每track每次2..4096，默认2048，包括边界/knots及null样本；pixels模式需回查完整出生至head区间。每frame最多20000次轨道求值和10000保留点。超出BUDGET_EXCEEDED，可显式改变预算/步距/时间窗；不默默降采样。history不维护有状态帧队列，跳转可重建。
+- `trail.draw(p,history或set,time,{width=2,color='#fff',alpha=1,filter?})`或`trail.draw(p,TrailFrame,undefined,style)`，返回{frame,drawing}。width为全宽像素或point=>width；color为hex/Color32或(point,across)=>color；alpha为0..1或(point,across)=>coverage，乘死亡fade的opacity。point有id/parent和上述历史坐标；像素着色的time/s/historyAge等是段内线性插值的**材质坐标**，不是额外物理查询。across为横截面归一化-1..1。filter(state)可筛父轨道。宽度在采样点求值并沿段线性变化；连续nearest-centerline绘制，圆帽/圆角并集，无尖锐miter，不在接缝叠加alpha。重合段等距离时最新段优先，其余按归一化中心距离选；不是透明多层织物合成。保持Painter状态，颜色/光由普通Painter/API扩展。
+- `trail.observe(history或set,time,{tracks?}) → TrailObservation`。observe(t,o)返回`{trails:[trail.observe(...)],particles?,sources?,contacts?}`；稳定group/track描述和可变states。可声明少量真实track，避免为了观察制造粒子或手写历史表。所有观察共享16MB，超出拒绝。历史落盘采用无损point-table-v1（observations version 2）：重复点的静态数据共用索引，逐帧年龄/长度等浮点原样保留，不丢帧/降采样/量化；fx_probe自动展开完整点，旧v1逐帧记录仍可读取，不需作者手写解码器。旧run不由像素/稀疏particle观察推断历史。
+- `fx_probe({run,view:'trails',at?,layers?:[groupId],tracks?:[trailId],sampling='saved',limit=12})`返回trails描述、各时刻完整states和原尺寸折线点图；带单位、请求/实际时间、夹边/误差及选择/省略数。saved取最近保存**历史frame**，其中每个点仍保留原历史时刻；replay显式用冻结后端在请求时间重建。新后端对pure作品使用绝对时间，不将请求舍入为十位小数；simulation仍报告实际120Hz tick，旧run保持其冻结时钟。无需调试改稿。该视图不接受fields/particles/window；最多12000个所选点、800万图像像素，超限拒绝。未声明的旧run明确不支持。
+
+### example
+
+```js
+import {particle,contact,trail} from '../../../src/authoring/index.js';
+export const meta={name:'Rebound ink',desc:'A real bounce leaves ink',tags:['trail'],size:[120,100],origin:[40,75],duration:2.5,options:{}};
+const head=particle.emitter({id:'head',births:[{id:'one',born:0,position:[0,-30]}],initial:{life:1.8,velocity:[22,-20]},motion:{acceleration:[0,160],contact:contact.floor({y:0})}});
+const wake=trail.emitter(head,{id:'ink',length:{seconds:.55},death:{mode:'fade',seconds:.3}});
+export function draw(p,t){trail.draw(p,wake,t,{width:q=>.5+4*q.s,color:(q,a)=>Math.abs(a)<.3?'#fff1bc':'#517f9b'});}
+export function observe(t){return {trails:[trail.observe(wake,t)]};}
+```
+
+完整可拆参考`lab/rebound-loom`还包含非粒子轨道、停顿/折返、像素长度及死亡后消散。作者可读取TrailFrame再用自写绘制，或只替换带宽/材料；不要求使用同一外观。
+
+### pitfalls
+
+- 时间采样不保证空间误差；高速度/高曲率需要显式步距/knots。接触corner保持折返，不自动抹平弹跳。
+- pixels长度来自折线；裁切点与像素shader插值不是新的动力学证据。world/body空间需要显式变换至effect。
+- arbitrary trajectory的死亡/不连续性不能自动推断；particle.track要求显式end，自写track可给null和break。
+- 不是刚体带状碰撞、流体、纹理UV ribbon或动态Spine导出。旧速度尾迹与程序刀光保持原入口。
+
+### evidence
+
+trail.test.mjs验证与core/shapes.trail的采样等价、实际反弹拐角/终点、驻留时间、像素弧长裁切/缺段、死亡策略、固定力场求值与实际时钟、path.strip像素等价/自交、预算、观察身份及保存/缺源码冻结probe。开发参考不替代独立创作者；每轮build、原报告与修复补测另存测评目录。技术通过不代表艺术认证或净省时证明。

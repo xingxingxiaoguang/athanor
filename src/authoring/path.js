@@ -1,4 +1,5 @@
 import { finite, positive, identity, point, choice, fail, color, alpha } from './contract.js';
+import { stroke } from './strip.js';
 
 export function polyline({ id, points, closed = false, space = 'effect' }) {
   identity(id, 'path.id'); identity(space, 'path.space');
@@ -60,23 +61,9 @@ export function resample(path, { spacingPx = 1, from = 0, to = 1 } = {}) {
 export function strip(painter, path, { from = 0, to = 1, width = 2, color: paint = '#fff', alpha: opacity = 1, spacingPx = 1 } = {}) {
   if (from === to) return { segments: 0 };
   const points = resample(path, { spacingPx, from, to }).map((p) => ({ ...p, width: positive(typeof width === 'function' ? width(p.s) : width, 'path.strip.width', true) }));
-  const radius = Math.max(...points.map((p) => p.width)) / 2;
-  if (!radius) return { segments: 0 };
-  const x0 = Math.min(...points.map((p) => p.position[0])) - radius, y0 = Math.min(...points.map((p) => p.position[1])) - radius;
-  const x1 = Math.max(...points.map((p) => p.position[0])) + radius, y1 = Math.max(...points.map((p) => p.position[1])) + radius;
-  const segments = points.slice(1).map((b, i) => ({ a: points[i], b }));
-  painter.shade(x0, y0, x1, y1, (x, y, out) => {
-    let best = Infinity, along = 0, across = 0;
-    for (const { a, b } of segments) {
-      const dx = b.position[0] - a.position[0], dy = b.position[1] - a.position[1], len2 = dx * dx + dy * dy;
-      const u = Math.max(0, Math.min(1, ((x - a.position[0]) * dx + (y - a.position[1]) * dy) / (len2 || 1)));
-      const ex = x - a.position[0] - dx * u, ey = y - a.position[1] - dy * u, r = (a.width + (b.width - a.width) * u) / 2;
-      const d = r > 0 ? Math.hypot(ex, ey) / r : Infinity;
-      if (d < best) { best = d; along = a.s + (b.s - a.s) * u; across = ((dx * ey - dy * ex) < 0 ? -1 : 1) * d; }
-    }
-    if (best > 1) return;
+  return stroke(painter, points, { width: (p) => p.width, shade: ({ a, b, u, across }, out) => {
+    const along = a.s + (b.s - a.s) * u;
     out.c = color(typeof paint === 'function' ? paint(along, across) : paint, 'path.strip.color');
     out.a = alpha(typeof opacity === 'function' ? opacity(along, across) : opacity, 'path.strip.alpha');
-  });
-  return { segments: segments.length, bounds: [x0, y0, x1, y1] };
+  } });
 }

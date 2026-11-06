@@ -1,8 +1,9 @@
 // Reuse the mature library implementations directly; their source attribution
-// remains in fire/_lib.js and arcane/_lib.js. This adapter only binds the public
+// remains in fire/_lib.js, arcane/_lib.js and water/_lib.js. This adapter binds the public
 // particle state to those pixel materials and restores Painter state afterward.
 import { firePuff, smokePuff, ember as drawEmber, spark as drawSpark } from '../fx/fire/_lib.js';
 import { mote as drawMote, streak as drawStreak } from '../fx/arcane/_lib.js';
+import { bead, ring, WATER } from '../fx/water/_lib.js';
 import { fit } from '../core/color.js';
 import { color, alpha, positive, finite, point, fail } from './contract.js';
 
@@ -40,4 +41,18 @@ export function mote(p, state, { tint = state.tint, size = 1, glow = 0.4 } = {})
 export function streak(p, state, { tint = state.tint, maxLength = 7, glow = 0.4 } = {}) {
   point(state.velocity, 'material.state.velocity'); positive(maxLength, 'material.maxLength'); positive(glow, 'material.glow', true); const c = color(tint, 'material.tint');
   paint(p, state, 1, () => drawStreak(p, ...state.position, ...state.velocity, c, 1, maxLength, glow));
+}
+
+// Directly reuse water/_lib.bead/ring and Ripples' lifetime growth/decay.
+// The original water helper retains its Sprite Fusion/Hugo Duprez MIT credit.
+export function waterDrop(p, state, { colors = WATER, size = 2, glow = 0 } = {}) {
+  point(state.velocity, 'material.state.velocity'); positive(size, 'material.size'); const C = palette(colors, 8);
+  paint(p, state, glow, () => { bead(p, ...state.position, ...state.velocity, size, C); p.glow(...state.position, 2.5 + size, C[5], .1 + .05 * size); });
+}
+export function ripple(p, state, { colors = WATER, radius = 18, startRadius = 1, sy = .22, n = 2, gap = 3, strength = 1, hot = .1, glint = 0, seed = 1, glow = 0 } = {}) {
+  positive(radius, 'material.ripple.radius', true); positive(startRadius, 'material.ripple.startRadius', true); positive(sy, 'material.ripple.sy');
+  if (!Number.isInteger(n) || n < 1 || n > 16) fail('material.ripple.n', 'expected integer 1..16');
+  for (const [name, value] of Object.entries({ gap, strength, hot, glint })) positive(value, `material.ripple.${name}`, true); finite(seed, 'material.ripple.seed');
+  const C = palette(colors, 8), u = state.age01, r = startRadius + (radius - startRadius) * (1 - Math.pow(1 - u, 2.6)), k = strength * Math.pow(1 - u, 1.7);
+  paint(p, state, glow, () => ring(p, ...state.position, r, sy, k, C, { n, gap: gap * (.55 + .6 * u), hot: (state.age ?? u * (state.life ?? 1)) < hot, glint: glint * k, seed }));
 }

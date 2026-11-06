@@ -13,4 +13,6 @@ export * as light from './light.js';
 export * as texture from './texture.js';
 export * as particle from './particle.js';
 export * as material from './material.js';
+export * as contact from './contact.js';
+export * as trail from './trail.js';
 export { AuthoringError } from './contract.js';

@@ -1,11 +1,34 @@
 export const RECIPES = [
   {
-    id: "particle-material", name: "出生源 → 独立运动 → 生命周期材质 → 粒子探测", words: "particle emitter texture lifetime smoke force orbit 粒子 发射 运动 贴图 生命周期 烟 火花 环流",
+    id: "history-ribbon", name: "真实轨道 → 固定历史时钟 → 裁长 → 可替换条带", words: "history trail ribbon bounce reverse fade 历史 拖尾 尾迹 反弹 折返 停留 消散 条带",
+    mechanism: "Rebuild past positions from a pure track on a birth-anchored seconds grid. Retain contact corners, declare discontinuity breaks, choose seconds or sampled-polyline pixels, and fade or shrink after death. Reuse the continuous path-strip rasterizer while replacing width/color/age behavior; observe actual history without debug geometry.",
+    references: ["lab/rebound-loom", "arcane/arcane-missiles", "melee/sword-slash"], resources: ["core/trail", "core/particle", "core/contact", "core/path"],
+    decisions: ["Does the trail represent physical motion or include the visual offset?", "Should length be measured in seconds or traveled pixels?", "Should the last shape freeze/fade or expire progressively after the head dies?"],
+    failures: ["A velocity streak is not retained history.", "Declare known corners/breaks; fixed sampling does not promise to recover arbitrary between-sample motion.", "Null samples and break knots prevent bridging gaps; do not smooth a deliberate rebound away.", "Use trail.observe and probe view:trails; old pixels or particle samples are not automatically history declarations."],
+  },
+  {
+    id: "contact-response", name: "解析飞行 → 稳定接触 → 二次出生 → 可替换响应", words: "contact collision bounce landing splash ripple secondary 接触 碰撞 落地 反弹 涟漪 二次发射 衍生",
+    mechanism: "Generalize sparkAt's analytic floor crossing and sim/Drops landing responses into immutable contact records. Reuse contact.events + contact.births instead of frame callbacks or author-written deduplication. Draw replaceable responses using water/ripple, fire/smoke, textures or custom geometry, and inspect actual events with probe view:contacts/window.",
+    references: ["lab/landing-relay", "water/fountain", "explosions/small-explosion", "fire/torch"],
+    resources: ["core/contact", "core/particle", "core/material", "core/motion"],
+    decisions: ["Should a parent bounce, settle or disappear when it reaches the horizontal surface?", "Which ordinal and impact speed should drive rings, dust, growth or a non-particle response?", "Does the response change material while preserving the causal birth identity?"],
+    failures: ["Do not create secondary particles inside draw or a frame-dependent callback.", "Contact traces are point bodies on a static horizontal plane with constant acceleration/axis drag; custom forces and curved terrain need other mechanisms.", "Arrival times use the solver, not output frames; choose half-open event windows and preserve parent/copy identity.", "Declare contact.observe even when no event occurs; old pixels cannot reconstruct event IDs."],
+  },
+  {
+    id: "source-kinematics", name: "共享源轨迹 → 停顿/反向 → 出生速度继承", words: "source trajectory velocity inheritance derivative angular pause reverse 源轨迹 移动源 源速度 速度继承 导数 角速度 停顿 反向",
+    mechanism: "Share one SourceTrajectory between visible geometry and birth transforms. Use seconds-based scalar curves, sum/product/affine envelopes, arc-length path motion and parent/child sources. Analytic source velocity includes a rotating birth point; choose a temporal side at corners. Declare actual source states with motion.observeSource and use probe view:sources, without witness particles. Custom functions can use an explicitly stepped numerical estimate without a claimed error bound.",
+    references: ["lab/source-shuttle", "fire/torch", "projectiles/signal-flare"],
+    resources: ["core/curve", "core/motion", "core/particle", "core/path"],
+    decisions: ["Does the source translate, pivot, reverse, or stop; which geometry should share it?", "How much source velocity should fragments keep after detaching?", "Is an abrupt corner deliberate, or should the artist stop/smooth the motion there?"],
+    failures: ["Changing output FPS must not change inherited source velocity.", "A hold jump has no finite crossing velocity; one-sided values are explicit artistic choices.", "PathSource does not derive smooth angular velocity from polygonal tangents.", "Compare material-only edits and inspect births[].source.pointVelocity; source snapshots are not particle history trails."],
+  },
+  {
+    id: "particle-material", name: "出生源 → 独立运动 → 生命周期材质 → 粒子探测", words: "particle emitter texture lifetime smoke force orbit source velocity derivative 粒子 发射 运动 贴图 生命周期 烟 火花 环流 源轨迹 移动源 源速度 速度继承 导数",
     mechanism: "Lift the library's birth-time source sampling, overlapping cyclic particles, analytic drift and pixel material implementations into a composition. Keep schedule/domain, sampled birth attributes, forces/trajectory and drawing independent. Use a custom drawing callback or a texture sequence; declare observations and probe the selected saved run instead of adding debug draws.",
-    references: ["lab/cinder-orbit", "fire/torch", "arcane/portal", "explosions/small-explosion"],
+    references: ["lab/source-shuttle", "lab/cinder-orbit", "fire/torch", "arcane/portal", "explosions/small-explosion"],
     resources: ["core/particle", "core/schedule", "core/domain", "core/motion", "core/curve", "core/texture", "core/material"],
     decisions: ["Which shape carries the main gesture, and which fragments support it?", "Do fragments preserve a source's velocity, orbit a target, or change material while keeping identity?", "Which particle group and time window would test your motion/material question?"],
-    failures: ["Do not tie inward motion to boundary sampling.", "Do not reconstruct emitter velocity from output FPS.", "A sparse sampled trajectory does not certify continuous collisions or a real history trail."],
+    failures: ["Do not tie inward motion to boundary sampling.", "Use motion.source/pathSource and shared scalar envelopes for a visible source and its birth velocity; query births[].source to inspect the inherited point velocity.", "Do not reconstruct emitter velocity from output FPS; sampledSource needs an explicit seconds step and has no general error bound.", "A sparse sampled trajectory does not certify continuous collisions or a real history trail."],
   },
   {
     id: "propagation", name: "传播 → 到达 → 生长", words: "ice frost crystal nova 冰霜 晶体 扩散 生长",
