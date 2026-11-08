@@ -4,7 +4,7 @@
 
 # athanor.
 
-**<!-- count -->244<!-- /count --> pixel art effects and animations, every one a small piece of code.** Fire,
+**<!-- count -->293<!-- /count --> pixel art effects and animations, every one a small piece of code.** Fire,
 explosions, magic, weather, UI, pickups, critters and more. Play them live, recolor and mirror them, drop them into
 a browser game, or export sprite sheets for any engine. Plus a Claude Code skill that makes new ones the way a
 picky pixel artist would: draft, render, look, refine.
@@ -47,22 +47,16 @@ the idea at library scale, with a skill to keep going.
 | **pickups** | 11 | chest open, coin spin, collect burst, crystal shard, gem spin, heart pickup… |
 | **transitions** | 10 | blinds, burn away, crt off, diamond wipe, glitch wipe, iris… |
 | **critters** | 12 | bat, bird, butterfly, eyeball, fish school, flying skull… |
+| **weapons** | 49 | 酸液枪 · 弹道, 酸液枪 · 启流弹道, 酸液枪 · 停流弹道余尾, 酸液枪 · 击中, 酸液枪 · 首次命中, 酸液枪 · 命中残留退场… |
 <!-- /catalog -->
 
 Every effect is a file in `src/fx/<category>/<name>.js`. The [catalog](docs/CATALOG.md) lists them all.
 
-**Experimental AI authoring lab:** run `npm run lab`, then open `http://127.0.0.1:4173`.
-The [lab guide](experiments/vfx-lab/README.md) covers nine JSON/MCP tools, queryable SDK contracts, frozen-source validation and replay,
-custom comparison windows, history, split color/light export, and the experiment's current limits.
-
-The [AI authoring product proposal](docs/ai-vfx-tools/README.md) describes reference and technique discovery,
-partial reuse, creative operators, observation tools, and a phased validation plan. Implemented SDK contracts
-and path/mask/dissolve, shared source trajectories with velocity, floor-contact events and secondary births, reconstructible history trails, particle, texture and material operators are documented in the [public API guide](docs/ai-vfx-tools/authoring-api.md);
-the broader capabilities are planned rather than callable APIs.
-The roadmap uses the [Kamehameha and Chibaku Tensei production logs](experiments/vfx-lab/productions/2026-11-06-anime-vfx/README.md)
-to prioritize frozen animation delivery, native-scale temporal inspection, explicit viewports, action anchors,
-procedural subjects, reusable techniques and arrival-driven assembly. New maintainers should start with the
-[development handoff](docs/ai-vfx-tools/HANDOFF.md) for the current implementation order, source paths and independent creator gates.
+**AI authoring workbench:** ordinary JavaScript, composable mechanisms, native-scale observation and iterative editing.
+Start with the [project guide](docs/ai-vfx-tools/README.md), then choose the
+[creator quickstart](experiments/vfx-lab/README.md) or [development handoff](docs/ai-vfx-tools/HANDOFF.md).
+Current capabilities, future priorities, contracts and historical evidence have separate reading paths.
+Run `npm run lab` for the optional local preview at `http://127.0.0.1:4173`.
 
 ## use one.
 

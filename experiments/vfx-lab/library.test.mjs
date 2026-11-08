@@ -1,0 +1,40 @@
+import test from'node:test';import assert from'node:assert/strict';
+import{cpSync,mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,symlinkSync,existsSync}from'node:fs';
+import{join,basename,dirname}from'node:path';import{tmpdir}from'node:os';import{spawnSync}from'node:child_process';
+import{ROOT}from'../../tools/lib/fxlib.mjs';import{encodePNG}from'../../tools/lib/png.mjs';
+test('frozen source/PNG installation: scope, stale guards, exact frames, registry, idempotence, interrupted rollback and external edit preservation',()=>{
+ const root=mkdtempSync(join(tmpdir(),'athanor-library-test-'));
+ try{
+  for(const dir of['src','tools'])cpSync(join(ROOT,dir),join(root,dir),{recursive:true});
+  cpSync(join(ROOT,'experiments/vfx-lab'),join(root,'experiments/vfx-lab'),{recursive:true,filter:p=>!['productions','evaluations','research','drafts'].includes(basename(p))&&!p.endsWith('.test.mjs')});
+  mkdirSync(join(root,'docs'),{recursive:true});for(const file of['README.md','docs/CATALOG.md'])cpSync(join(ROOT,file),join(root,file));writeFileSync(join(root,'package.json'),'{"type":"module"}');symlinkSync(join(ROOT,'node_modules'),join(root,'node_modules'));
+  const draft=join(root,'experiments/vfx-lab/drafts');mkdirSync(draft,{recursive:true});
+  writeFileSync(join(draft,'_library-fixture.js'),`// Copyright fixture author; retained verbatim.\nexport const marker='./_library-fixture.js';export const dot=(p,t)=>{if(t<.3)p.circle(0,0,2,0xffffffff)};`);
+  writeFileSync(join(draft,'library-fixture.js'),`import{dot,marker}from'./_library-fixture.js';import{texture}from'../../../src/authoring/index.js';export const meta={name:'fixture',desc:'A frozen fixture with a declared bitmap.',tags:['fixture'],size:[48,48],origin:[24,24],duration:.3,loop:false,fps:30,bg:'none',options:{seed:7}};export const authoring={ending:'clear'};export const assets={chip:{file:'library-fixture.png',pivot:[1,1]}};export const events={hit:.1};export function draw(p,t,o){if(t>=.3)return;dot(p,t);texture.draw(p,o.assets.chip,{position:[7,0]});if(marker!=='./_library-fixture.js')throw Error('incidental string changed');}`);
+  writeFileSync(join(draft,'library-fixture.png'),encodePNG(2,2,new Uint8Array([255,0,0,255,0,0,0,0,0,255,0,255,0,0,255,255])));
+  const call=(name,args,code)=>{const p=spawnSync(process.execPath,[join(root,'experiments/vfx-lab/cli.mjs'),name,JSON.stringify(args)],{cwd:root,encoding:'utf8',timeout:90000,maxBuffer:8*1024*1024});let q;try{q=JSON.parse(p.stdout);}catch{throw Error(p.stderr||p.stdout);}if(code){assert.equal(q.error?.code,code,JSON.stringify(q));return q.error;}assert.equal(q.ok,true,JSON.stringify(q));return q.result;};
+  const r=call('render',{id:'draft/library-fixture',fps:30}),v=call('validate',{run:r.run});assert(v.passed);call('history',{action:'select',run:r.run,reason:'Technical fixture explicitly selected'});
+  const child=call('render',{run:r.run,fps:60});call('history',{action:'select',run:child.run,reason:'Another selected variant must not revoke the first selected frozen run'});
+  const original=new Map(['src/fx/index.js','docs/CATALOG.md','README.md','src/fx/categories.js'].map(p=>[p,readFileSync(join(root,p))]));
+  for(const f of['library-fixture.js','library-fixture.png','_library-fixture.js'])rmSync(join(draft,f));
+  const entry={run:r.run,validationRef:v.validationRef,id:'fixture/frozen',metadata:{name:'Frozen fixture',description:'Selected fixture using its original bitmap.',tags:['fixture','approved']}},p=call('library',{action:'plan',entries:[entry]});assert.equal(p.action,'planned');assert.equal(p.frameChannelPairs,20);
+  for(const[file,bytes]of original)assert(readFileSync(join(root,file)).equals(bytes));assert(!existsSync(join(root,'src/fx/fixture/frozen.js')));
+  const base={planRef:p.planRef,planDigest:p.planDigest},approval={ids:[entry.id],reason:'Authorized technical fixture in isolated test checkout'};
+  call('library',{action:'install',...base,approval:{...approval,ids:['fixture/other']}},'APPROVAL_SCOPE_MISMATCH');
+  writeFileSync(join(root,'README.md'),'external change');call('library',{action:'install',...base,approval},'REVISION_CONFLICT');writeFileSync(join(root,'README.md'),original.get('README.md'));
+  const detail=JSON.parse(readFileSync(p.detailRef)),dep=detail.reused[0],depPath=join(root,dep.file),depBytes=readFileSync(depPath);writeFileSync(depPath,'changed');call('library',{action:'install',...base,approval},'REVISION_CONFLICT');writeFileSync(depPath,depBytes);
+  const staged=join(dirname(p.detailRef),'staged',p.files[0].file),stagedBytes=readFileSync(staged);writeFileSync(staged,'tampered');call('library',{action:'install',...base,approval},'REVISION_CONFLICT');writeFileSync(staged,stagedBytes);
+  const installed=call('library',{action:'install',...base,approval});assert.equal(installed.action,'installed');assert(call('library',{action:'install',...base,approval}).idempotent);assert.deepEqual(call('library',{action:'status',...base}).conflicts,[]);
+  const i=call('inspect',{id:entry.id,sections:['provenance','contract']});assert.equal(i.provenance.sourceRun,r.run);assert.equal(i.assets.available,true);
+  const modules=call('inspect',{id:entry.id,sections:['source']}).sourceModules;assert(modules.some(s=>s.source.includes('Copyright fixture author')));assert(modules.every(s=>s.matchesRegisteredDigest&&!s.original.startsWith('src/authoring/')&&!s.original.startsWith('src/core/')));
+  const rr=call('render',{id:entry.id,fps:30});assert.equal(call('validate',{run:rr.run}).passed,true);for(const ch of['color','light'])assert(readFileSync(join(root,'records/vfx-lab',rr.run,ch+'.png')).equals(readFileSync(join(root,'records/vfx-lab',r.run,ch+'.png'))));
+  const vv=call('validate',{run:rr.run});call('history',{action:'select',run:rr.run,reason:'Selected existing formal effect can be revised in place'});assert.equal(call('library',{action:'plan',entries:[{...entry,run:rr.run,validationRef:vv.validationRef}]}).action,'planned');
+  assert(readFileSync(join(root,'src/fx/index.js'),'utf8').includes('fixture/frozen'));assert(readFileSync(join(root,'docs/CATALOG.md'),'utf8').includes('fixture/frozen'));
+  const closure=p.files.filter(f=>f.file.includes('_sources/')).map(f=>readFileSync(join(root,f.file),'utf8')).join('\n');assert(closure.includes('Copyright fixture author; retained verbatim.'));assert(closure.includes("marker='./_library-fixture.js'"));
+  const olderFile=join(root,'src/fx/fixture/frozen.js'),currentSource=readFileSync(olderFile,'utf8'),line=currentSource.match(/export const provenance=(.*);/)[0],older=JSON.parse(line.slice('export const provenance='.length,-1));delete older.sourceModules;writeFileSync(olderFile,currentSource.replace(line,'export const provenance='+JSON.stringify(older)+';'));
+  const fallback=call('inspect',{id:entry.id,sections:['source']}).sourceModules;assert(fallback.some(s=>s.source.includes('Copyright fixture author')));assert(fallback.every(s=>s.matchesRegisteredDigest===null&&!s.original.startsWith('src/core/')&&!s.original.startsWith('src/authoring/')));writeFileSync(olderFile,currentSource);
+  const txPath=join(dirname(p.detailRef),'transaction.json'),tx=JSON.parse(readFileSync(txPath));tx.status='installing';writeFileSync(txPath,JSON.stringify(tx));writeFileSync(join(root,'records/vfx-lab/library/install.lock'),JSON.stringify({pid:2147483647,planRef:p.planRef}));
+  const target=join(root,'src/fx/fixture/frozen.js'),after=readFileSync(target);writeFileSync(target,'external artistic edit');call('library',{action:'recover',...base},'RECOVERY_REQUIRED');assert.equal(readFileSync(target,'utf8'),'external artistic edit');writeFileSync(target,after);assert.equal(call('library',{action:'recover',...base}).action,'rolled-back');assert(!existsSync(target));for(const[file,bytes]of original)assert(readFileSync(join(root,file)).equals(bytes));
+  assert(call('history',{callRef:installed.callRef}).next.includes('does not query effect selection'));
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

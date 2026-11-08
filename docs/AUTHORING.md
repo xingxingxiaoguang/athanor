@@ -1,8 +1,12 @@
 # Writing an effect
 
-An effect is one file, `src/fx/<category>/<name>.js` (kebab-case), drawing pixel art over time into two buffers.
-It has no images and no dependencies beyond `src/core`. It can be played live, recolored, mirrored and rendered
-to a sprite sheet for any engine.
+This guide describes the original core-only library style and its stock actor conventions. For AI workbench
+creation, including composable SDK mechanisms, external PNG assets and frozen-run delivery, start with the
+[creator quickstart](../experiments/vfx-lab/README.md). Those works can use other viewpoints, scales and subjects.
+
+A core-only effect is a file, `src/fx/<category>/<name>.js` (kebab-case), drawing pixel art over time into two
+buffers without images or dependencies beyond `src/core`. It can be played live, recolored, mirrored and
+rendered to a sprite sheet for any engine.
 
 The quality bar is Sprite Fusion's open-source pixel art VFX by Hugo Duprez
 ([spritefusion.com/pixel-art-vfx](https://www.spritefusion.com/pixel-art-vfx), MIT). Every effect here should hold up

@@ -7,8 +7,9 @@ import { LAB, RECORDS, history } from "./lab.mjs";
 import { TOOLS } from "./definitions.mjs";
 import { invoke } from "./invoke.mjs";
 import { errorResult } from "./errors.mjs";
+import { recordCall } from './journal.mjs';
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".json": "application/json" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".json": "application/json", ".mp4": "video/mp4", ".gif": "image/gif" };
 export function createLabServer() {
   return createServer(async (req, res) => {
     const reply = (status, data) => res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify(data));
@@ -16,8 +17,13 @@ export function createLabServer() {
       const port = req.socket.localPort, hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
       if (!hosts.includes(req.headers.host)) return reply(403, { error: "Local host only" });
       if (req.headers.origin && !hosts.map((h) => `http://${h}`).includes(req.headers.origin)) return reply(403, { error: "Same-origin requests only" });
-      const path = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-      if (req.method === "GET" && path === "/api/tools") return reply(200, TOOLS);
+      const requestUrl = new URL(req.url, 'http://localhost'), path = decodeURIComponent(requestUrl.pathname);
+      if (req.method === "GET" && path === "/api/tools") {
+        try { return reply(200, requestUrl.search
+          ? await invoke('tools', Object.fromEntries(requestUrl.searchParams))
+          : await recordCall('tools', { detail: 'full' }, () => TOOLS)); }
+        catch (error) { return reply(400, { ok: false, error: error.message, diagnostic: errorResult(error) }); }
+      }
       if (req.method === "GET" && path === "/api/runs") return reply(200, history());
       if (req.method === "POST" && path === "/api/call") {
         if (req.headers["content-type"]?.split(";")[0] !== "application/json") return reply(415, { error: "Use application/json" });

@@ -242,23 +242,31 @@ export function spriteSheet(fx, r, name) {
 }
 
 /** Animated preview through ffmpeg (GIF or MP4), scaled k times. Returns false if ffmpeg is missing. */
-export function writeVideo(file, r, k, { loops = 1 } = {}) {
+export function writeVideo(file, r, k, { loops = 1, scaleInEncoder = false, gifLoop = 0, timeout, details = false } = {}) {
   const { w, h, frames, fps } = r, W = w * k, H = h * k;
   const evenW = W + (W % 2), evenH = H + (H % 2), mp4 = file.endsWith(".mp4");
   const parts = [];
-  for (let l = 0; l < loops; l++) for (const f of frames) parts.push(Buffer.from(upscale(f.color, w, h, k).buffer));
-  const vf = mp4
+  for (let l = 0; l < loops; l++) for (const f of frames) {
+    const rgba = scaleInEncoder ? f.color : upscale(f.color, w, h, k);
+    parts.push(Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength));
+  }
+  const scale = scaleInEncoder ? `scale=${W}:${H}:flags=neighbor,` : "";
+  const vf = scale + (mp4
     ? `pad=${evenW}:${evenH}:0:0:black,format=yuv420p`
-    : "split[a][b];[a]palettegen=max_colors=255:stats_mode=full[p];[b][p]paletteuse=dither=none";
-  const args = ["-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", `${W}x${H}`, "-r", String(fps), "-i", "-", "-vf", vf];
+    : "split[a][b];[a]palettegen=max_colors=255:stats_mode=full[p];[b][p]paletteuse=dither=none");
+  const args = ["-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", scaleInEncoder ? `${w}x${h}` : `${W}x${H}`, "-r", String(fps), "-i", "-", "-vf", vf];
   if (mp4) args.push("-c:v", "libx264", "-crf", "14", "-preset", "slow", "-movflags", "+faststart");
-  else args.push("-loop", "0");
+  else args.push("-loop", String(gifLoop));
+  if (details) args.push("-an", "-vsync", "0");
   args.push(file);
   mkdirSync(dirname(file), { recursive: true });
-  const res = spawnSync("ffmpeg", args, { input: Buffer.concat(parts), maxBuffer: 1 << 30 });
-  if (res.error) return false;
+  const res = spawnSync("ffmpeg", args, { input: Buffer.concat(parts), maxBuffer: 1 << 30, timeout });
+  if (res.error) {
+    if (details && res.error.code !== "ENOENT") throw res.error;
+    return false;
+  }
   if (res.status !== 0) throw new Error(`ffmpeg failed: ${res.stderr}`);
-  return true;
+  return details ? { command: ["ffmpeg", ...args], inputSize: [scaleInEncoder ? w : W, scaleInEncoder ? h : H], size: mp4 ? [evenW, evenH] : [W, H] } : true;
 }
 
 export function save(file, buf) {

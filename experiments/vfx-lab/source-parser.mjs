@@ -2,8 +2,9 @@
 // or text matching of strings/comments is used for static dependency discovery.
 import * as vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, realpathSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { readFileSync, realpathSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { dirname, relative, resolve, sep, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const known = new Map();
@@ -24,7 +25,15 @@ function worker(input) {
   return { snapshot, dependencies };
 }
 function run(input) {
-  const output = JSON.parse(execFileSync(process.execPath, ['--experimental-vm-modules', '--no-warnings', fileURLToPath(import.meta.url), '--parse-worker'], { input: JSON.stringify(input), encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  // A saved input file avoids waiting for pipe EOF in synchronous child I/O.
+  // The parser still receives the exact snapshot and does not evaluate it.
+  const directory = mkdtempSync(join(tmpdir(), 'athanor-parse-'));
+  let output;
+  try {
+    const file = join(directory, 'input.json');
+    writeFileSync(file, JSON.stringify(input), { mode: 0o600 });
+    output = JSON.parse(execFileSync(process.execPath, ['--experimental-vm-modules', '--no-warnings', fileURLToPath(import.meta.url), '--parse-worker', file], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  } finally { rmSync(directory, { recursive: true, force: true }); }
   if (output.error) throw new Error(`Source parse failed: ${output.error}`);
   for (const [file, source] of Object.entries(output.snapshot)) known.set(source, output.dependencies[file]);
   return output;
@@ -35,6 +44,6 @@ export function moduleImports(snapshot) {
   return Object.fromEntries(Object.entries(snapshot).map(([file, source]) => [file, known.get(source)]));
 }
 if (process.argv[2] === '--parse-worker' && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  try { process.stdout.write(JSON.stringify(worker(JSON.parse(readFileSync(0, 'utf8'))))); }
+  try { process.stdout.write(JSON.stringify(worker(JSON.parse(readFileSync(process.argv[3] ?? 0, 'utf8'))))); }
   catch (error) { process.stdout.write(JSON.stringify({ error: error.message })); process.exitCode = 0; }
 }

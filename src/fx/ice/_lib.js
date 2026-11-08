@@ -3,6 +3,7 @@
 // The crack walk and the faceted crystal shading are adapted from Sprite Fusion's open-source ice
 // (https://www.spritefusion.com/pixel-art-vfx/ice), MIT License, Copyright (c) 2026 Hugo Duprez.
 
+import { fractureBranches } from "../../core/branching.js";
 import { GRAVITY, clamp, luma, TAU, WHITE } from "../../core/index.js";
 
 /** Is (x, y) inside the polygon pts [[x, y], ...]? (even-odd rule) */
@@ -308,21 +309,7 @@ export function endBy(t, D, ...systems) {
  * crack, so drawFractures can grow them at a speed. Returns polylines [[x, y, d], ...].
  */
 export function fractures(R, inside, x, y, n, opts = {}) {
-  const out = [], step = opts.step ?? [1.6, 2.6], len = opts.len ?? 18, fork = opts.fork ?? 0.16, a0 = opts.a0 ?? R.range(0, TAU), spread = opts.spread ?? TAU;
-  const walk = (x, y, d, a, len, depth) => {
-    const pts = [[x, y, d]];
-    for (let s = 0; s < len; s++) {
-      a += R.range(-0.55, 0.55);
-      const st = R.range(step[0], step[1]), nx = x + Math.cos(a) * st, ny = y + Math.sin(a) * st;
-      if (!inside(nx, ny)) break;
-      (x = nx), (y = ny), (d += st);
-      pts.push([x, y, d]);
-      if (depth < 2 && pts.length > 2 && R.chance(fork)) walk(x, y, d, a + R.sign() * R.range(0.6, 1.2), Math.ceil(len * 0.5), depth + 1);
-    }
-    if (pts.length > 1) out.push(pts);
-  };
-  for (let i = 0; i < n; i++) walk(x, y, 0, a0 + (i / n) * spread + R.range(-0.3, 0.3) * Math.min(1, spread / TAU), len, 0);
-  return out;
+  return fractureBranches(R, inside, x, y, n, opts).map(branch => branch.points);
 }
 
 /**

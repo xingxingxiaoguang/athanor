@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { LabError } from "./errors.mjs";
 import { moduleImports } from "./source-parser.mjs";
+import {readAssetBundle} from './assets.mjs';
 
 export const digestOf = (value) => createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
 export const entryFor = (id) => {
@@ -14,7 +15,7 @@ export const entryFor = (id) => {
   return category === "lab" || category === "draft" ? `experiments/vfx-lab/${category === "lab" ? "effects" : "drafts"}/${name}.js` : `src/fx/${id}.js`;
 };
 
-export function revisionOf(snapshot, entry, options) {
+export function revisionOf(snapshot, entry, options,assetDigest=null) {
   const files = new Set(), imports = moduleImports(snapshot);
   function visit(file) {
     if (files.has(file) || typeof snapshot[file] !== "string") return;
@@ -22,7 +23,7 @@ export function revisionOf(snapshot, entry, options) {
     for (const specifier of imports[file]) if (specifier.startsWith(".")) visit(posix.normalize(posix.join(posix.dirname(file), specifier)));
   }
   visit(entry);
-  return digestOf({ sources: Object.fromEntries([...files].sort().map((file) => [file, snapshot[file]])), options });
+  return digestOf({ sources: Object.fromEntries([...files].sort().map((file) => [file, snapshot[file]])), options,...(assetDigest?{assets:assetDigest}:{}) });
 }
 
 export function replaySupport(snapshot, entry) {
@@ -41,7 +42,7 @@ export function replaySupport(snapshot, entry) {
     }
   }
   visit(entry);
-  return { available: blockers.length === 0, scope: "Relative local JavaScript sources and saved renderer; external assets, packages and dynamic imports are unsupported", blockers };
+  return { available: blockers.length === 0, scope: "Relative local JavaScript sources and saved renderer; declared local PNG resources are frozen separately; undeclared files, packages and dynamic imports are unsupported", blockers };
 }
 
 export async function withFrozenRun(manifest, directory, callback) {
@@ -57,6 +58,7 @@ export async function withFrozenRun(manifest, directory, callback) {
   if (!support.available) throw unavailable("Saved dependencies cannot be replayed completely", support);
   const runtime = manifest.runtime;
   if (!runtime || runtime.node !== process.version || runtime.platform !== process.platform || runtime.arch !== process.arch) throw unavailable("Saved runtime differs from the current runtime", { saved: runtime, current: { node: process.version, platform: process.platform, arch: process.arch } });
+  const assetBundle=readAssetBundle(manifest,directory);
   const folder = mkdtempSync(join(tmpdir(), "athanor-vfx-replay-"));
   try {
     writeFileSync(join(folder, "package.json"), '{"type":"module"}\n');
@@ -70,7 +72,8 @@ export async function withFrozenRun(manifest, directory, callback) {
       const saved = await import(pathToFileURL(join(folder, "experiments/vfx-lab/lab.mjs")).href);
       const clock = await import(pathToFileURL(join(folder, "experiments/vfx-lab/clock.js")).href);
       const core = await import(pathToFileURL(join(folder, "src/core/index.js")).href);
-      backend = { fx: await saved.effect(manifest.id), sample: saved.sample, clockedFx: clock.clockedFx, createFrame: core.createFrame, clearFrame: core.clearFrame, snapshot };
+      backend = { fx: await saved.effect(manifest.id), sample: saved.sample, clockedFx: clock.clockedFx, createFrame: core.createFrame, clearFrame: core.clearFrame, snapshot,assetBundle };
+      if(assetBundle){if(typeof saved.materializeAssets!=='function')throw new Error('Saved asset evaluator is missing');backend.fx.resources=saved.materializeAssets(assetBundle);}
       if (typeof backend.sample !== "function" || typeof backend.clockedFx !== "function") throw new Error("Saved evaluator entry is missing");
     } catch (error) { throw unavailable(`Could not load saved evaluator: ${error.message}`, { run: manifest.run }); }
     return await callback(backend);

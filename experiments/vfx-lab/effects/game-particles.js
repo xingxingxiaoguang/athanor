@@ -1,0 +1,4 @@
+import {base,colors} from './_game-kit.js';import {particle,schedule,material} from '../../../src/authoring/index.js';
+export const meta={...base,name:'Game cutout / particles',desc:'Reusable detached mote burst in the same game palette; instantiate at captured world positions.',tags:['game','particle','asset','粒子'],duration:1.2};export const authoring={ending:'clear'};export const events={spawn:0};
+let c;function d(o){return c?.seed===o.seed?c.e:(c={seed:o.seed,e:particle.emitter({id:'motes',seed:o.seed,births:schedule.burst({id:'burst',at:0,count:12}),initial:{life:[.35,.8],velocity:({rand})=>[rand('vx',-38,38),rand('vy',-55,15)]},motion:{acceleration:[0,90],drag:.5},material:{opacity:s=>1-s.age01}})}).e;}
+export function draw(p,t,o){particle.draw(p,d(o),t,{draw:(p,s)=>material.spark(p,s,{colors,glow:.16})});}export function observe(t,o){return {particles:[particle.observe(d(o),t)]};}

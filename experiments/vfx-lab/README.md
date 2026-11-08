@@ -1,210 +1,59 @@
-# VFX Lab · 实验性 AI 创作工具
+# AI 创作者快速入口
 
-这是像素特效工具台的本地实验实现。AI通过公开契约、参考代码与配方写普通JavaScript，再渲染、观察、局改、冻结验证和导出。现有路径/图像/粒子、源轨迹、水平接触与真实历史子集的边界见[实施状态](../../docs/ai-vfx-tools/implementation-status.md)，研发顺序见[交接工作包](../../docs/ai-vfx-tools/HANDOFF.md#9-后续研发路线具体工作包与验收)。工具不接模型服务，已有编码AI负责创作与艺术判断。
+用普通 JavaScript 制作特效，通过结构化工具查找、运行、看原图、局改和交付。主角是 AI 创作者；人类可预览和反馈，创作不依赖操作参数编辑器。
 
-## 运行
+继续已有作品先看[生产索引](productions/README.md)。当前持久入口是`lab/fireball-master`和`lab/smoke-master`；它们随Git保存，不依赖本机drafts。
 
-Node 18+，不新增运行依赖。在仓库根目录执行：
+## 先得到一个可见草稿
 
-```sh
-npm run lab
-# http://127.0.0.1:4173
-npm run lab:test
-```
-
-页面点击“运行示例实验”，生成 Cryo bloom 的“晶冠”和“碎冰波”。可切换背景、单独观察颜色/光、拖动时间、跳到事件、对齐版本、检查并导出。原项目的图库仍使用 `npm run gallery`。
-
-## AI 的入口
-
-九个工具共享同一份[输入/输出 JSON Schema](definitions.mjs)，包括 `fx_history` 和首批 `fx_probe`。19个公开API家族的精确绘制、运动、贴图、粒子和材质接口见[已实现的创作 API](../../docs/ai-vfx-tools/authoring-api.md)，可通过 `fx_inspect` 按需查询。CLI 只向标准输出写一行 JSON；命令执行失败时返回 `ok: false` 并以非零状态退出。技术检查发现不合格作品仍是一次成功执行，结果中的 `passed` 为 `false`。
+仓库根目录使用 Node 18+，先 npm install。若本机 Node 或编码器不可用，查[运行说明](../../docs/ai-vfx-tools/ENVIRONMENT.md)。
 
 ```sh
-npm run lab:tools
-node experiments/vfx-lab/cli.mjs search '{"query":"冰霜"}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/painter"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/color"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"id":"ice/frost-nova"}'
-node experiments/vfx-lab/cli.mjs scaffold '{"name":"my-frost","brief":"低矮冰波向外扩散，中心保持清楚","question":"减少中心晶体是否让扩散方向更明确？"}'
+node experiments/vfx-lab/cli.mjs tools
+node experiments/vfx-lab/cli.mjs scaffold '{"name":"my-effect","brief":"要表现的用途、主轮廓和一个待验证问题","template":"blank"}'
 ```
 
-编辑返回的 `drafts/my-frost.js`，然后：
+编辑返回的 JS 文件，然后 render 其 id。已有参考用 search 找，再 inspect 所需的源码/契约/例子；不必先读完整 Schema 或 API 手册。blank 提供接口，默认 example 提供可改写示例，造型与材质由作者选择。
 
-```sh
-node experiments/vfx-lab/cli.mjs render '{"id":"draft/my-frost","note":"先验证主轮廓"}'
-node experiments/vfx-lab/cli.mjs render '{"id":"draft/my-frost","options":{"direction":"wave"},"note":"比较较低的碎冰波"}'
-node experiments/vfx-lab/cli.mjs compare '{"runs":["替换为第一个 run","替换为第二个 run"],"event":"release","offsets":[-0.1,0,0.08,0.3,0.6]}'
-node experiments/vfx-lab/cli.mjs validate '{"run":"替换为选定的 run"}'
-node experiments/vfx-lab/cli.mjs history '{"id":"draft/my-frost","limit":6}'
-node experiments/vfx-lab/cli.mjs export '{"run":"替换为选定的 run"}'
-```
+需要借用作品中的局部技法时，`inspect {id:'explosions/smoke-bomb',sections:['reuse']}`列出真实库helper、导出和对应机制；加`source`可读这些库模块，保留署名。也可按`lobe`、`cloud`等原函数名search，再inspect返回的mechanism契约及`reuse`中的可替换输入。普通JS可直接import原helper，或用material等已有SDK适配，不必复制整件作品。
 
-也支持从标准输入传 JSON，方便避免 shell 引号问题。`scaffold` 默认复制冰晶示例，也可指定 `template:"blank"` 创建真正空白的模块。brief 必填，question 可选；工具不会根据描述生成新设计。换材质、运动或构图需创作者编辑代码。草稿默认忽略提交，值得保留的作品需主动移到正式目录或明确加入 Git。
+## 看图、修改、再决定
 
-需要 MCP 的 AI 客户端可配置本地 stdio server：
+1. render 保存一个 run；用 probe 的图像窗口实际看原尺寸，用真实声明对象视图检查相关事实。
+2. 根据画面提出具体修改假设，再改普通 JS。结构/材质/时序可以独立变化，compare 用于比较明确版本。
+3. 准备交付时明确选版，验证该冻结 run，再导出同一版。技术通过与艺术选择分别记录。
 
-```json
-{
-  "command": "node",
-  "args": ["/absolute/path/to/athanor/experiments/vfx-lab/mcp.mjs"]
-}
-```
-
-最小实现支持 `initialize`、`notifications/initialized`、`tools/list`、`tools/call`、`ping`，协议版本为 `2025-11-25` / `2025-06-18`。渲染与比较返回 PNG 图片内容，AI 不必只拿到一个无法观察的文件路径。它尚未经过独立 MCP 客户端的兼容性认证；自动测试覆盖了 stdio 握手、发现、调用、错误及图片返回。
-
-## 创作者的工作流程
-
-1. 写明用途、尺度、主轮廓、材质、节奏及一个待验证的问题。工具不代替这一步。
-2. `search` / `inspect` 找相近机制。配方里有参考、待作的选择和常见失败。
-3. 编辑草稿，保持普通 `meta` + `draw(p,t,o)` / `create(o)` 接口；可直接使用完整 core API。
-4. 将 release/contact/melt 等时间导出为 `events`，让相关层共享定义。已有作品没有 events 时可在 render 输入中补充。
-5. 渲染后实际打开原生单帧、现有probe/compare窗口或在页面播放，检查关键事件、颜色与光和背景。接触表/宽图被缩小不能当原尺寸证据；记录实际看的是单帧、密集帧、局部播放还是连续播放。
-6. 写出最重要的问题和修改假设，再改代码或参数。方向探索要改变结构或运动，更换种子只是同一设计的变化。
-7. 用相同条件比较版本。技术检查单独处理；检查通过并不授予审美认可。
-8. 根据brief明确选版，用`validate {run}`检查该冻结目标，再从同一run导出。传同run的`validationRef`；跨run拒绝，未提供时标unvalidated。当前公共export只交付atlas/PNG；MP4/GIF、原尺寸分段与公共生产记录是待实施工作包，不能把目标字段直接传入工具。
-
-## 文件和复现约定
-
-每个 render 在 `records/vfx-lab/<run>/` 保存：
-
-- `manifest.json`：选项、事件、原始尺度、锚点、请求/模拟时间、逐帧矩形、源码摘要。
-- `sources.json`：特效及本地静态导入依赖、实验渲染器的源码快照。
-- `contact.png`：均匀采样加事件前一帧/当前帧/后一帧，标注实际采样时间。
-- `preview.png`：带场景和静态角色参照的动画图集。
-- `color.png` / `light.png`：不含lab静态参照的颜色层与附加光层；作者自己绘制的人物/地形仍在其中，不自动成为仅特效cutout。
-- `combined.png`：普通透明图片中的合成效果。
-- `preview.rgba`：便于原样比较历史图像的未压缩缓存。
-
-每次保存都有独立 run ID。修改代码后不会改写旧版本；对比和导出使用保存的图像。`revision` 标识作品源码闭包与实际选项，`sourceDigest` 标识包含求值后端的完整源码快照，run 另固定场景与采样。由旧 run 重渲染会记录 `parentRun` 并保留作品修订，不编辑工作文件。历史 v1 清单缺少作品修订时用原 sourceDigest 作兼容身份。
-
-导出目录包含 Aseprite 风格 `atlas.json` 和三张 PNG，记录事件、pivot、源 run/digest。颜色层用普通透明混合，光层用加法混合；`combined.png` 在不同背景上的光感是近似值。此处验证了文件与元数据，尚未验证 Unity/Godot 等引擎的实际导入。
-
-## 运行与验证语义
-
-- **模拟时钟**：原运行时把 dt 拆成不大于 1/120 秒的子步；240 fps 下每步发射概率会改变结果。实验适配器使用真正的 120 Hz 固定 tick，240 fps 时保持上一完整 tick。测试覆盖 30/60/240 fps 和不规则更新。纯函数保留请求时间，并消除边界处的浮点累计误差。模拟绘制时间也从 tick 整数推导，避免 0.2 秒结束落在 0.19999… 的边界误差；新后端记录为 lab-fixed-120-v2，旧快照继续使用其原后端。原库运行时未改动。
-- **透明像素**：预览画布的 paste 是合成操作，不能用它向透明精灵表复制烟雾，否则 RGB 会被透明度乘暗。导出使用原始 RGBA 行复制，测试保留部分透明像素的 RGB。
-- **事件采样**：均匀抽帧会跳过 1–2 帧的峰值。现在额外保留事件附近帧；仍受输出 fps 限制，比较报告实际帧时间，不伪称精确发生在事件时刻。
-- **检查的边界**：只检查默认种子和颜色不够。新检查采样两个种子，同时检查颜色与光。实测原库 `ice/frost-nova` 在 seed 7 的结束样本有残留；`melee/sword-slash` 有少量画布外亮光提示。它们不是本分支引入的主库修改，报告需结合画面判断。
-- **版本检查**：`validate {id}` 检查当前文件；`validate {run}` 使用冻结源码、依赖和后端从头重放。页面“检查当前版本”检查正在预览的 run。报告明确表示 frozen-source-replay，不声称已经逐帧核对保存图像。`render {target:{run}}` 可从冻结目标生成新的运行；允许显式调整 fps、背景和事件采样，不允许暗改作品选项。
-- **模块缓存**：每次工具调用在新 Node 进程中执行，改动间接依赖也会生效；同时隔离异常和限制执行时间。成本是调用有启动开销。
-- **比较语义**：同尺度、同锚点，按共享事件加自选 offsets 对齐；也可用 `alignment:"time",times:[...]` 比较绝对时间。报告请求时间、保存帧时间、模拟时间、取样误差、夹边、重复帧及场景差别，不给自动美感评分。
-
-## 现行范围与生产限制
-
-支持整个现有特效目录和实验/草稿效果。九份配方用于检索指导；scaffold 提供冰晶示例和空白模块。草稿编辑由编码 AI 的常规文件工具承担。
-
-检查是**采样检查**：覆盖约 13 个均匀时间点加命名事件、两个种子、24 px 外边距、颜色/光复现、结束残留、循环周期及跨更新率结果。不证明所有帧都不越界，不证明循环速度连续，不进行性能认证或审美判断。最大渲染预算为 2400 万帧像素，昂贵调用串行执行，单次工具调用限时 90 秒。
-
-页面中的角色仅作站立尺度参照，不播放完整 act、受击停顿或姿态映射；这些仍用原库 `tools/act.mjs` 检查。当前也没有场景截图输入、专用代码编辑器、版本选择器、自动修复或云服务。页面默认对比最近两个保存版本，更早的版本可用 run ID 从 CLI/MCP 比较。
-
-服务仅监听 `127.0.0.1` 并检查 Host/Origin。只运行可信本地代码：特效本身仍是拥有 Node 权限的 JavaScript，子进程隔离不是不可信代码执行沙箱。
-
-## 创作测评与生产证据
-
-每个新功能闭环都由不继承研发上下文的新独立作者，在固定隔离构建中仅用公开定义/API/参考效果源码完成复杂原创、至少两类局改、原尺寸观察和同run验证/交付。修复由原作者公开补测，原报告保持。[正式方法与证据索引](../../docs/ai-vfx-tools/creator-evaluation.md)区分技术验证、创作可用和表达收益，不设GUI-only门槛。
-
-用户明确开放任意源码的[龟派气功波与地爆天星生产检验](productions/2026-11-06-anime-vfx/README.md)保留两份原始日志与点评。作品入口为`lab/kamehameha-storm`、`lab/chibaku-tensei`；媒体由作者辅助脚本从冻结图集制作，不代表当前公共工具已支持视频导出，也不计作新的黑盒功能门。
-
-研发顺序为：工作包3冻结动画交付与原尺寸时序观察→4视口与边界定位→5动作/挂点、程序主体与身体场景→6局部技法复用/结构探索→7到达聚合→8按任务扩展生产。下一项是3.1冻结动画交付，完整来源和验收见[交接工作包](../../docs/ai-vfx-tools/HANDOFF.md#9-后续研发路线具体工作包与验收)。作者负责造型、材质和取舍，工具逐步承担公共计算、观察适配和交付工程。
-
-## 基础创作能力调研
-
-[Spine Particle 调研](research/tsnm-spine-particle/README.md)分析其发射、生命周期、运动、路径、资源和光带机制，记录实现探测与适用边界，并提出面向 AI 的算子、工具定义及创作验证建议。研究中的部分建议已在SDK交付，完整建议不等于已实现；当前交付子集与后续计划以实施状态文档为准。
-
-[AI 像素特效创作工具产品全景设计](../../docs/ai-vfx-tools/README.md)进一步结合全库实现，定义参考与技法、局部复用、基础算子、观察实验、AI 工具接口、创作流程和分期验收。完整目标仍是产品方案；A 阶段已落地的子集见实施状态和实时工具定义。
-
-## 返回、历史与重放约定
-
-- render 默认 `detail:"summary"`，保留 run、target、选项、事件、尺寸、原点、诊断、关键图像和 manifest 路径；完整帧表、运行环境与依赖清单在 manifest 或 `detail:"full"`。页面播放显式请求 full。
-- inspect 支持 `ref.kind` 为 effect/operator/run，以及按需 sections。旧 `inspect {id}` 仍返回作品源码。当前登记19个契约族：原有 Painter/颜色/时钟/模块，加 path/random/curve/domain/schedule/motion/mask/field/image/light 和 texture/particle/material/contact/trail；可按机制搜索，不是全部未来算子已经实现的声明。
-- history 接受 id/run/query 至少一项；按 limit/cursor 分页，返回修订、父运行、创作说明、验证和导出引用。run 检索展开同作品上下文；不推断最终选择。检查 run 可看到它与当前文件的变化。
-- 验证分析写入 `validations/validation-*.json`；冻结 run 的分析放在该 run 下，既不覆盖 manifest，也不改旧图像。导出记录附在各自目录。
-- 重放固定本地相对 JavaScript 导入闭包与保存的 renderer/clock/core，要求 Node 版本、平台和架构与记录一致。动态导入、外部包、Node 文件资源和其他环境依赖尚不完整支持。静态识别是保守的依赖检查，不是任意 JavaScript 的依赖证明或沙箱；可识别缺口返回 REPLAY_UNAVAILABLE，不以当前文件替代。保存图像仍能比较和导出。
-- 结束策略可用 `authoring.ending` 声明 clear/residue/persistent/handoff/loop。默认沿用单次清空、循环周期检查；允许残留不等于证明残留稳定或交接成功，未检项会列出。
-
-```sh
-node experiments/vfx-lab/cli.mjs scaffold '{"name":"my-effect","brief":"一个原创方向性冲击","template":"blank"}'
-node experiments/vfx-lab/cli.mjs render '{"target":{"run":"替换为旧 run"},"fps":60,"note":"从旧版补看更密集的时间样本"}'
-node experiments/vfx-lab/cli.mjs compare '{"runs":["替换为 run A","替换为 run B"],"alignment":"time","times":[0.15,0.95,1.18]}'
-node experiments/vfx-lab/cli.mjs export '{"run":"替换为选定的 run","validationRef":"替换为该 run 的 validationRef"}'
-```
-
-## 路径与消融联动
-
-从 `src/authoring/index.js`（包入口 `athanor/authoring`）导入普通代码算子：
+例如在已完成改稿后，固定要交付的版本：
 
 ```js
-import {path, curve, random, domain, schedule, motion, mask, field, image, light}
-  from '../../../src/authoring/index.js';
+import {invoke} from './experiments/vfx-lab/invoke.mjs';
+const r=await invoke('render',{id:'draft/my-effect'});
+const p=await invoke('probe',{run:r.run,view:'combined',window:{from:0,to:.3}});
+// 用图像工具实际查看 p.pages 中的原尺寸图；这里不自动判断已观看或美术质量。
+await invoke('history',{action:'select',run:r.run,reason:'根据实际观察选择此版',evidence:[p.callRef]});
+const v=await invoke('validate',{run:r.run});
+if(v.passed) await invoke('export',{run:r.run,validationRef:v.validationRef});
 ```
 
-它们负责弧长/切法线、连续条带、具名随机、曲线插值、面积/边界/密度采样、稳定出生、解析运动，以及程序mask、排序/首次到达场、保留/边缘/变化区域和衍生出生；造型、路径、材质和节奏仍由作者定义。颜色在新接口边界接受并检查 hex/Color32，原始 Painter 契约保持不变。
+不要为每次早期尝试重复完整交付步骤。需要媒体、缺源重放、边界定位、启停或保存对象观察时，再查[工作流按需说明](WORKFLOWS.md)。
+
+## 只展开当前需要的契约
 
 ```sh
-node experiments/vfx-lab/cli.mjs search '{"query":"消融"}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/path"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/image"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"id":"lab/ember-weave"}'
-node experiments/vfx-lab/cli.mjs render '{"id":"lab/ember-weave","options":{"bend":-0.5,"burnAxis":-1,"glow":0}}'
-```
-
-`lab/ember-weave` 是可拆读和改写的组合参考；用相同到达场供给颜色轮廓、边缘光和碎屑出生。不要把动态mask的区间变化误作精确瞬时出生；首次到达的稳定birth records不依赖输出fps/跳转顺序，任意动态场则只能报告实际区间变化。
-
-## 粒子、贴图、库内材质与探测
-
-可用`{particle,texture,material}`与schedule/domain/motion/curve组合。`material`直接适配现有fire/arcane辅助模块的六种成熟画法；particle允许换轨迹、力、生命周期和任意Painter绘制；texture支持RGBA/ASCII、序列帧与独立轴心。不是只能调固定粒子种类。
-
-```sh
+node experiments/vfx-lab/cli.mjs tools '{"name":"fx_probe"}'
 node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/particle"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/material"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"id":"lab/cinder-orbit"}'
-node experiments/vfx-lab/cli.mjs render '{"id":"lab/cinder-orbit","options":{"glow":0}}'
-node experiments/vfx-lab/cli.mjs probe '{"run":"替换为选定run","view":"color","at":{"event":"release","offsets":[-0.1,0,0.1,0.5]}}'
-node experiments/vfx-lab/cli.mjs probe '{"run":"替换为选定run","view":"particles","layers":["release"],"at":{"times":[1.2,1.5,1.8]},"limit":4}'
 ```
 
-新作品可选`observe(t,o)`导出粒子组；render保存Birth/State及hash，probe默认只读这些事实，草稿损坏不影响旧证据。显式`sampling:'replay'`才在冻结后端重算非保存时刻。旧作品没有声明的粒子身份不推断；任意mask/field观察、内部画面层隔离、去修改器、连续轨迹和动作播放时钟仍未支持。四个保存图像视图适用于所有run，单run即可，不再需要复制run ID来比较同一版本。
+[工具分工](../../docs/ai-vfx-tools/tool-contracts.md)帮助选入口，[公开 API](../../docs/ai-vfx-tools/authoring-api.md)供查签名。CLI 返回一行 JSON，也接受 stdin；MCP 入口为本目录 mcp.mjs，HTTP/可选本地页面用 npm run lab。三个调用端共用定义。
 
-搜索现在隔离 helper/坏模块，返回 RESOURCE_SKIPPED、候选 ID 和修复提示，其他结果仍可用；普通辅助文件可以直接导入，下划线命名可排除发现。源码语法/导入/导出错误指向可编辑文件，参数JSON错误指向 arguments。依赖快照改用 Node 自身模块语法解析，不把注释/字符串里的 from/import 误当依赖；未支持的动态资源仍明确拒绝重放。
+所有公共调用会记录 callRef；原错误和结果用 history 找回。id 是当前源码，run 是保存版本；修改当前文件不会改写旧图像。probe/compare 返回保存时刻与实际误差，不从画面猜没有声明的对象。
 
-每个功能闭环均需通过[独立创作者复杂任务](../../docs/ai-vfx-tools/creator-evaluation.md)再复核。实现测试、开发者示例和技术通过都不能代替这一门槛。
+交接时可调用`history {action:'bundle',run:'明确run'}`：自动复制各稿调用/原错误、原尺寸图、验证和导出，返回有SHA的index.json与可编辑报告。可选annotations补意图、改动、判断及未测范围；viewed只填写自己实际看过的图像callRef，工具不会把交图算作已观看。选版、验证、审批仍保留各自身份。
 
-## 保存通道的原尺寸比较
+## 交付和入库
 
-`compare` 现在接受 `channel:"preview"|"color"|"light"|"combined"`，与 event+offsets 或绝对 times 共同使用。直接读取保存的图像，不要求改作品、重渲染或自行裁图；返回 channel、saved-images 表示、实际时间与暗色观察底。preview 沿用保存场景；color/combined 在暗色底上显示原透明图集，light 以纯黑加法中性底展示原始RGB、exposure=1，避免极弱光被当成比底更暗的剪影。它没有推断内部层或粒子身份。页面比较沿用当前观察通道。
+export 默认保留精确图集、色层和加法光层，MP4/GIF 是可选预览并需要编码器。独立消费包可移出仓库使用；原尺寸分件与作者自己画入的场景物件需在作品中明确区分。
 
-```sh
-node experiments/vfx-lab/cli.mjs compare '{"runs":["run-A","run-B"],"alignment":"time","times":[0.9,1.1,1.3,1.5],"channel":"color"}'
-node experiments/vfx-lab/cli.mjs compare '{"runs":["run-A","run-B"],"event":"release","offsets":[-0.03,0,0.03,0.1],"channel":"light"}'
-```
+正式收录用 library 的 plan/install/status/recover：以选定、验证通过的冻结 run 计划搬运和逐帧核对，再按用户已有的准确批准范围执行。既有批准不重复确认；作者选版或技术通过不自动成为用户审批。[完整入库契约](../../docs/ai-vfx-tools/library-installation.md)。
 
-搜索的多个词目前按同一条目的 AND 匹配；复合机制无命中时返回拆词建议，不把“没匹配”声称为能力不存在。
-
-## 带速度的共享源轨迹
-
-`curve.scalar`的at/derivative提供解析单侧导数；affine/combine接管共享包络的仿射、和/乘积法则。`motion.source`组合平移、旋转和父子变换，`motion.pathSource`沿弧长移动；同一source用于可见主体和emitter.transform。出生速度继承包括旋转域上实际出生点的切向速度，probe返回的birth.source保存源与pointVelocity，作者无需额外debug绘制。原transform回调与自写trajectory仍可用。
-
-```sh
-node experiments/vfx-lab/cli.mjs search '{"query":"源轨迹"}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/motion"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/curve"}}'
-node experiments/vfx-lab/cli.mjs inspect '{"id":"lab/source-shuttle"}'
-node experiments/vfx-lab/cli.mjs render '{"id":"lab/source-shuttle"}'
-```
-
-默认按右时间侧处理停顿/折点，left/error可显式选择，返回导数策略与corner/jump提示；hold跳跃没有有限穿越速度。PathSource不从分段切线伪造平滑角速度。任意函数可用sampledSource，但必须指定固定秒距与范围，结果报告差分模板与未知误差界，不依赖输出fps。精确单位/签名见公开API；代码来源、技术回归与独立创作范围分别记录在[当轮归档](evaluations/2026-11-06-source-trajectory/README.md)。
-
-源本身也可真实观测：`observe(t,o)`返回`sources:[motion.observeSource(axis,t,{id:'axis'})]`，与particles数组可共存；`probe {run,view:'sources',layers:['axis'],at:{times:[...]}}`直接读源位置、平移/角速度及导数策略。无需造不绘制的粒子来查看轴状态；默认保存证据/显式冻结重放沿用原身份规则。旧run未声明源时明确不支持，effect之外的空间需显式转换。
-
-## 接触事件与二次出生
-
-`core/contact`提供点主体对静态水平面的解析接触，以及反弹/停留/停止/死亡响应。`contact.events`纯读取，`contact.births`依事件身份生成稳定子出生；不随draw、输出fps或窗口读取重复触发。直接复用原库水滴/涟漪画法的waterDrop/ripple可独立替换。参看可运行`lab/landing-relay`、contact-response配方和公开API。
-
-`observe`可声明完整contacts表；`probe {run,view:"contacts",window:{from:0,to:1},limit:24}`读取保存事件或显式冻结重放，不使用最近帧时间。该视图不接受at/fields，layers为事件组、particles为父ID。范围为effect空间、恒加速度/分轴阻力；不与force/trajectory/kill混用，不是任意形状碰撞。独立创作与实际边界见[测评归档](evaluations/2026-11-06-contact-events/README.md)。
-
-## 真实历史拖尾
-
-`core/trail`与`particle.track`按出生锚定的固定时间网格重建过去位置，保留接触corner、停留时刻和显式break/null缺段；选择秒或采样折线的像素长度、physical/render位置、死亡后freeze/fade/shrink/clear。条带直接复用原path的连续像素栅格，宽度/颜色/横截面仍可自写，不用速度短线冒充历史。可拆参考`lab/rebound-loom`和history-ribbon配方。
-
-`observe`声明trails后，`probe {run,view:"trails",at:{times:[1.2,1.8]},sampling:"saved"}`返回真实历史frame、点时间/实际运动时钟和原尺寸点图；layers选择组、tracks选择稳定trail ID。replay从冻结后端重建，旧run不补造。默认12条，结果报告省略数；该视图不接受fields/particles/window。
-
-当前只保证所声明时间采样和折线语义，不保证任意曲线的空间误差。每轨道<=12秒，maxSamples默认2048、最高4096；整frame最多20000次求值/10000点，所有观察共享16MB，超限拒绝不默默降采样。自定义跳变必须显式声明，replacement trajectory的终点不猜测。独立原创、修复与剩余负担见[当轮测评](evaluations/2026-11-06-history-trails/README.md)。
+需要制作什么可以直接从任务开始；研发状态、历史和未来路线不是创作的前置阅读。研发接手走[项目入口](../../docs/ai-vfx-tools/README.md)中的专门链路。

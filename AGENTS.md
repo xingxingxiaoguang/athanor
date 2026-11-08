@@ -12,7 +12,9 @@ The workbench grows from both the existing 200+ effects **and their code impleme
 
 ## Independent creator gate for the VFX workbench
 
-The user requires an independent creator exercise after **each completed functional loop**, not only unit tests or a developer-authored demo. This applies to SDK algorithms, reusable mechanisms and workflow/observation features.
+The primary creator is an AI agent. Assess public-contract discovery, structured inputs/results, diagnostic clarity, editing/recovery steps and avoidable code infrastructure from the AI caller's actual use. A convenient human GUI is not the usability target or a required gate; original-scale images remain necessary visual evidence and may be consumed directly through image tools.
+
+The user requires an independent creator exercise after **each completed substantive functional loop or grouped wave**, not only unit tests or a developer-authored demo. Their 2026-11-07 refinement permits small, deterministic improvements to be grouped efficiently; do not run a separate creator for every tiny fix. Exercise the combined wave when contract/behavior changes or uncertain creative-use consequences warrant actual observation. This applies to SDK algorithms, reusable mechanisms and workflow/observation features.
 
 - Spawn a fresh independent subagent without implementation conversation context (`fork_turns: "none"`), working on an isolated snapshot with recorded build hashes. Give it a complex original effect task related to the delivered capability; ordinary JavaScript editing is part of the product contract.
 - The creator must not read tool/runtime/SDK implementation, implementation tests, frozen `sources.json`, other creators' solutions or developer explanations. It may read public tool definitions by calling `tools`, API docs, examples and reference effect source through public inspect, and edit its own work. Operator inspect must not request implementation source.
@@ -21,6 +23,6 @@ The user requires an independent creator exercise after **each completed functio
 - Preserve the original report and build identity. Fix confirmed issues and have the independent creator retest via public calls; add a separate retest record. Do not silently rewrite the original outcome after a fix. A repaired issue can use the same independent tester; a new feature loop needs a fresh creator.
 - Archive reproducible lightweight evidence under `experiments/vfx-lab/evaluations/`, with bulky raw runs under ignored `records/vfx-lab/creator-evaluations/`. Clearly separate technical verification, creator assessment and untested product ambitions.
 
-Development handoff: `docs/ai-vfx-tools/HANDOFF.md` (for the next developer, not reading material for black-box creators).
+Documentation entry: [AI VFX workbench](docs/ai-vfx-tools/README.md). Development handoff: [HANDOFF](docs/ai-vfx-tools/HANDOFF.md) (for the next developer, not reading material for black-box creators). Black-box creators start with the [public creator guide](experiments/vfx-lab/README.md).
 
 See `docs/ai-vfx-tools/creator-evaluation.md` for the evidence rubric and current evaluations. Do not introduce a GUI-only criterion, fixed artwork DSL, automatic aesthetic rating or forced preset as an interpretation of these requirements.

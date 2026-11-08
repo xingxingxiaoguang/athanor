@@ -1,6 +1,6 @@
 # Catalog
 
-244 effects in 21 categories. Every one is a file in
+293 effects in 22 categories. Every one is a file in
 `src/fx/<category>/<name>.js`; render any of them with `node tools/render.mjs <id> --gif`.
 
 ## moves
@@ -393,3 +393,59 @@ slimes, bats, ghosts, frogs.
 | Slime | `critters/slime` | loop 1.8s | 112×88 | A glossy slime hops in place: it squashes to wind up, stretches into the jump, rounds out in the air, splats down flinging droplets that creep back, then wobbles and blinks. |
 | Snake | `critters/snake` | loop 2.4s | 136×56 | A snake slithers along the floor, head raised: humps rise and roll back down its patterned body to the tail, dust puffs where it touches down, its forked tongue flicks. |
 | Wisp | `critters/wisp` | loop 3.2s | 128×104 | A will-o'-the-wisp loops a figure-eight over the floor: a little soul-flame with a face, its flame tail licking up and streaming behind, shedding puffs and sparks. |
+
+## weapons
+
+top-down battlefield weapons: separate launch, flight, hit and release parts.
+
+| effect | id | | size | what it does |
+|---|---|---|---|---|
+| 酸液枪 · 弹道 | `weapons/acid-flight` | loop 1s | 240×160 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 启流弹道 | `weapons/acid-flight-intro` | one-shot 1s | 240×160 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 停流弹道余尾 | `weapons/acid-flight-outro` | one-shot 1.2s | 240×160 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 击中 | `weapons/acid-hit` | loop 1s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 首次命中 | `weapons/acid-hit-intro` | one-shot 1s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 命中残留退场 | `weapons/acid-hit-outro` | one-shot 1.8s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 发射 | `weapons/acid-launch` | loop 1s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 开始发射 | `weapons/acid-launch-intro` | one-shot 1s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 酸液枪 · 停火枪口余尾 | `weapons/acid-launch-outro` | one-shot 1.2s | 192×192 | 粘稠分节酸柱、湿亮酸滴、蚀斑气泡与挥发余尾；俯视独立部件，局部 +X 为发射方向。 |
+| 闪电链 · 弹道 | `weapons/chain-flight` | one-shot 1.4s | 352×256 | 先导电击、按父链到达时刻推进与分叉、独立电灼节点；俯视独立部件，局部 +X 为发射方向。 |
+| 闪电链 · 击中 | `weapons/chain-hit` | one-shot 1.1s | 224×208 | 先导电击、按父链到达时刻推进与分叉、独立电灼节点；俯视独立部件，局部 +X 为发射方向。 |
+| 闪电链 · 发射 | `weapons/chain-launch` | one-shot 0.7s | 208×160 | 先导电击、按父链到达时刻推进与分叉、独立电灼节点；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 弹道 | `weapons/cold-flight` | loop 1s | 240×160 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 启流弹道 | `weapons/cold-flight-intro` | one-shot 1s | 240×160 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 停流弹道余尾 | `weapons/cold-flight-outro` | one-shot 1.2s | 240×160 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 击中 | `weapons/cold-hit` | loop 1s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 首次命中 | `weapons/cold-hit-intro` | one-shot 1s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 命中残留退场 | `weapons/cold-hit-outro` | one-shot 1.8s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 发射 | `weapons/cold-launch` | loop 1s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 开始发射 | `weapons/cold-launch-intro` | one-shot 1s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 冷气枪 · 停火枪口余尾 | `weapons/cold-launch-outro` | one-shot 1.2s | 192×192 | 冷凝喷口、锥状冷雾与晶粒、沿目标车体铺霜及霜层退场；俯视独立部件，局部 +X 为发射方向。 |
+| 加特林机枪 · 弹道 | `weapons/gatling-flight` | loop 1s | 176×112 | 12发/秒错相枪口、黄铜抛壳、独立曳光弹与金属击屑；俯视独立部件，局部 +X 为发射方向。 |
+| 加特林机枪 · 击中 | `weapons/gatling-hit` | one-shot 0.9s | 224×208 | 12发/秒错相枪口、黄铜抛壳、独立曳光弹与金属击屑；俯视独立部件，局部 +X 为发射方向。 |
+| 加特林机枪 · 发射 | `weapons/gatling-launch` | loop 1s | 208×160 | 12发/秒错相枪口、黄铜抛壳、独立曳光弹与金属击屑；俯视独立部件，局部 +X 为发射方向。 |
+| 加特林机枪 · 开始发射 | `weapons/gatling-launch-intro` | one-shot 1s | 208×160 | 12发/秒错相枪口、黄铜抛壳、独立曳光弹与金属击屑；俯视独立部件，局部 +X 为发射方向。 |
+| 加特林机枪 · 停火枪口余尾 | `weapons/gatling-launch-outro` | one-shot 0.9s | 208×160 | 12发/秒错相枪口、黄铜抛壳、独立曳光弹与金属击屑；俯视独立部件，局部 +X 为发射方向。 |
+| 贯穿激光 · 弹道 | `weapons/laser-pierce-flight` | one-shot 1.4s | 352×256 | 红白热切割束连续穿过三层装甲，真实入口/出口距离及能量衰减；俯视独立部件，局部 +X 为发射方向。 |
+| 贯穿激光 · 击中 | `weapons/laser-pierce-hit` | one-shot 1.1s | 224×208 | 红白热切割束连续穿过三层装甲，真实入口/出口距离及能量衰减；俯视独立部件，局部 +X 为发射方向。 |
+| 贯穿激光 · 发射 | `weapons/laser-pierce-launch` | one-shot 0.7s | 208×160 | 红白热切割束连续穿过三层装甲，真实入口/出口距离及能量衰减；俯视独立部件，局部 +X 为发射方向。 |
+| 霰弹枪 · 弹道 | `weapons/shotgun-flight` | one-shot 0.65s | 240×160 | 宽焰扇与药烟、12枚独立散布弹丸、逐丸命中；俯视独立部件，局部 +X 为发射方向。 |
+| 霰弹枪 · 击中 | `weapons/shotgun-hit` | one-shot 0.9s | 224×208 | 宽焰扇与药烟、12枚独立散布弹丸、逐丸命中；俯视独立部件，局部 +X 为发射方向。 |
+| 霰弹枪 · 发射 | `weapons/shotgun-launch` | one-shot 1.2s | 208×160 | 宽焰扇与药烟、12枚独立散布弹丸、逐丸命中；俯视独立部件，局部 +X 为发射方向。 |
+| 坦克穿甲弹 · 穿甲出口 | `weapons/tank-ap-exit` | one-shot 1.4s | 224×208 | 细长高速弹芯、入口装甲火花、出口前向金属破片；无高爆火球；俯视独立部件，局部 +X 为发射方向。 |
+| 坦克穿甲弹 · 弹道 | `weapons/tank-ap-flight` | loop 1s | 176×112 | 细长高速弹芯、入口装甲火花、出口前向金属破片；无高爆火球；俯视独立部件，局部 +X 为发射方向。 |
+| 坦克穿甲弹 · 击中 | `weapons/tank-ap-hit` | one-shot 1.4s | 224×208 | 细长高速弹芯、入口装甲火花、出口前向金属破片；无高爆火球；俯视独立部件，局部 +X 为发射方向。 |
+| 坦克穿甲弹 · 发射 | `weapons/tank-ap-launch` | one-shot 1.6s | 256×192 | 细长高速弹芯、入口装甲火花、出口前向金属破片；无高爆火球；俯视独立部件，局部 +X 为发射方向。 |
+| 特斯拉球状闪电 · 爆炸/释放 | `weapons/tesla-explosion` | one-shot 1.4s | 304×288 | 电荷汇聚、球周随机短闪电芒、接触放电、等离子爆发与数道余电；俯视独立部件，局部 +X 为发射方向。 |
+| 特斯拉球状闪电 · 弹道 | `weapons/tesla-flight` | loop 1s | 176×144 | 电荷汇聚、球周随机短闪电芒、接触放电、等离子爆发与数道余电；俯视独立部件，局部 +X 为发射方向。 |
+| 特斯拉球状闪电 · 击中 | `weapons/tesla-hit` | one-shot 0.3s | 224×208 | 电荷汇聚、球周随机短闪电芒、接触放电、等离子爆发与数道余电；俯视独立部件，局部 +X 为发射方向。 |
+| 特斯拉球状闪电 · 发射 | `weapons/tesla-launch` | one-shot 0.7s | 208×160 | 电荷汇聚、球周随机短闪电芒、接触放电、等离子爆发与数道余电；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 弹道 | `weapons/water-flight` | loop 1s | 240×160 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 启流弹道 | `weapons/water-flight-intro` | one-shot 1s | 240×160 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 停流弹道余尾 | `weapons/water-flight-outro` | one-shot 1.2s | 240×160 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 击中 | `weapons/water-hit` | loop 1s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 首次命中 | `weapons/water-hit-intro` | one-shot 1s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 命中残留退场 | `weapons/water-hit-outro` | one-shot 1.8s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 发射 | `weapons/water-launch` | loop 1s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 开始发射 | `weapons/water-launch-intro` | one-shot 1s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |
+| 喷水枪 · 停火枪口余尾 | `weapons/water-launch-outro` | one-shot 1.2s | 192×192 | 压水口、连贯透明水柱、偏向反溅与圆形湿痕、真实停流尾部；俯视独立部件，局部 +X 为发射方向。 |

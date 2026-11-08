@@ -116,7 +116,7 @@ test("HTTP adapter serves the viewer, calls tools and rejects hostile origins", 
   const url = `http://127.0.0.1:${server.address().port}`;
   try {
     assert.equal((await fetch(url)).status, 200);
-    const tools = await fetch(`${url}/api/tools`).then((r) => r.json()); assert.equal(tools.length, 9); assert(tools.some((t) => t.name === "fx_history")); assert(tools.some((t) => t.name === "fx_probe"));
+    const tools = await fetch(`${url}/api/tools`).then((r) => r.json()); assert.equal(tools.length, TOOLS.length); assert(tools.some((t) => t.name === "fx_history")); assert(tools.some((t) => t.name === "fx_probe"));
     const response = await fetch(`${url}/api/call`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "fx_inspect", arguments: { id: "lab/cryo-bloom" } }) }).then((r) => r.json());
     assert.equal(response.result.events.release, 0.36);
     assert.equal((await fetch(`${url}/api/call`, { method: "POST", headers: { origin: "https://example.com", "content-type": "application/json" }, body: "{}" })).status, 403);
@@ -137,7 +137,7 @@ test("stdio MCP negotiates, lists tools, returns errors and embeds rendered imag
     child.stdin.end(messages.map((m) => JSON.stringify({ jsonrpc: "2.0", ...m })).join("\n") + "\n");
   });
   const responses = output.trim().split("\n").map((s) => JSON.parse(s));
-  assert.equal(responses[0].result.protocolVersion, "2025-11-25"); assert.equal(responses[1].result.tools.length, 9);
+  assert.equal(responses[0].result.protocolVersion, "2025-11-25"); assert.equal(responses[1].result.tools.length, TOOLS.length);
   try { assert(responses[2].result.content.some((c) => c.type === "image" && c.mimeType === "image/png")); assert.equal(responses[3].result.isError, true); }
   finally { if (responses[2].result.structuredContent?.run) cleanRun(responses[2].result.structuredContent.run); }
 });

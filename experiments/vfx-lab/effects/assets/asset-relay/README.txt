@@ -1,0 +1,1 @@
+Original tiny program-drawn example assets for the asset-relay public workflow. PNGs authored for this repository; no external art copied. Traveler pivot [16,40]; spark atlas 8 frames of 8x8, pivot [4,4]. Transparent RGB is deliberately retained.

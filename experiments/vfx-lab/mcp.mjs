@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { TOOLS } from "./definitions.mjs";
 import { invoke } from "./invoke.mjs";
 import { errorResult } from "./errors.mjs";
+import { recordCall } from './journal.mjs';
 
 let initialized = false, ready = false;
 const send = (value) => process.stdout.write(JSON.stringify({ jsonrpc: "2.0", ...value }) + "\n");
@@ -24,15 +25,16 @@ for await (const line of createInterface({ input: process.stdin, crlfDelay: Infi
   const { id, method, params = {} } = request;
   if (method === "initialize") {
     initialized = true;
-    send({ id, result: { protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {} }, serverInfo: { name: "athanor-vfx-lab", version: "0.2.0" }, instructions: "Read fx_search and fx_inspect first; inspect core/painter and core/color for exact SDK contracts. Edit scaffolded JavaScript with your file tools. Render, LOOK at images, state a visual hypothesis and compare. Validate the chosen saved run and export that same run. Use fx_history to recover context. Validation does not grant aesthetic approval." } });
+    send({ id, result: { protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {} }, serverInfo: { name: "athanor-vfx-lab", version: "0.6.0" }, instructions: "Use fx_inspect ref:{kind:'tool',id:'catalog'} for a short directory or id:'fx_probe' (etc.) for its exact schema. fx_search also finds library mechanisms with contracts, reference fragments and dependencies; these differ from SDK core/* operators. Edit ordinary JavaScript. Render, LOOK at original-scale images and compare. Validate and export the same explicitly selected run; history recovers calls/errors. Validation does not grant aesthetic approval." } });
   } else if (method === "ping") send({ id, result: {} });
   else if (!ready) send({ id, error: { code: -32000, message: "Initialize and send notifications/initialized first" } });
-  else if (method === "tools/list") send({ id, result: { tools: TOOLS } });
+  else if (method === "tools/list") send({ id, result: { tools: await recordCall('tools', {}, () => TOOLS) } });
   else if (method === "tools/call") {
     try {
       const result = await invoke(params.name, params.arguments ?? {});
       const content = [{ type: "text", text: JSON.stringify(result) }];
-      if (result.image) content.push({ type: "image", mimeType: "image/png", data: readFileSync(result.image).toString("base64") });
+      const images = result.pages?.map(p => p.image) ?? (result.image ? [result.image] : []);
+      for (const path of images) content.push({ type: "image", mimeType: "image/png", data: readFileSync(path).toString("base64") });
       send({ id, result: { content, structuredContent: result, isError: false } });
     } catch (error) {
       const diagnostic = errorResult(error);

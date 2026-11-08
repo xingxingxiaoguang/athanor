@@ -1,9 +1,10 @@
 // Pixel-center inverse sampling generalizes Painter.sprite and the library's
 // rotated/squeezed sprites. Pixels, pivot and lifecycle clock stay independent.
 import { identity, count, point, finite, positive, choice, color, alpha, fail } from './contract.js';
+import {make as makeMask} from './mask.js';
 
 export function rgba({ id, w, h, data, pivot = [w / 2, h / 2] }) {
-  identity(id, 'texture.id'); count(w, 'texture.w', 480); count(h, 'texture.h', 480);
+  identity(id, 'texture.id'); count(w, 'texture.w', 4096); count(h, 'texture.h', 4096);
   if (!w || !h) fail('texture.size', 'dimensions must be positive');
   point(pivot, 'texture.pivot');
   if (!data || data.length !== w * h * 4) fail('texture.data', 'expected straight RGBA bytes, exactly w*h*4');
@@ -21,6 +22,23 @@ export function ascii({ id, rows, palette, pivot }) {
     data.set([c & 255, (c >>> 8) & 255, (c >>> 16) & 255, c >>> 24], i);
   }));
   return rgba({ id, w, h, data, pivot });
+}
+
+/** Alpha coverage to an existing local material grid; transparent RGB never
+ * creates solid cells. Split atlases first when they exceed mask dimensions. */
+export function mask(image,{id=`${image?.id}/mask`,space='material',origin,alphaThreshold=0}={}) {
+  check(image);alpha(alphaThreshold,'texture.mask.alphaThreshold');
+  return makeMask({id,space,w:image.w,h:image.h,origin:origin??image.pivot.map(v=>-v),test:(_,__,index)=>image.data[index*4+3]/255>alphaThreshold});
+}
+
+/** A surface-ready straight color/coverage sample. Local coordinates include
+ * the texture pivot, exactly matching mask()'s default material origin. */
+export function sample(image,position,{space='local'}={}) {
+  check(image);point(position,'texture.sample.position');choice(space,['local','pixel'],'texture.sample.space');
+  const x=Math.floor(position[0]+(space==='local'?image.pivot[0]:0)),y=Math.floor(position[1]+(space==='local'?image.pivot[1]:0));
+  if(x<0||y<0||x>=image.w||y>=image.h)return null;
+  const i=(y*image.w+x)*4,[r,g,b,a]=image.data.subarray(i,i+4);
+  return {color:(255<<24)|r|(g<<8)|(b<<16),alpha:a/255,rgba:[r,g,b,a],index:y*image.w+x};
 }
 
 export function sheet({ id, image, frameSize, pivots }) {

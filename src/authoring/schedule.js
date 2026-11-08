@@ -39,3 +39,23 @@ export function resident({ id, start, end, count: n }) {
   finite(start, 'schedule.start'); finite(end, 'schedule.end'); positive(end - start, 'schedule.resident.life');
   return burst({ id, at: start, count: n }).map((birth) => ({ ...birth, life: end - start }));
 }
+
+/** Join immutable start/end birth tables without rebuilding a life map in
+ * every artwork. Generalizes resident's end-start and ice/endBy's cutoff. */
+export function until(births, ends, { match = b => b.id, offset = 0 } = {}) {
+  if (!Array.isArray(births) || !Array.isArray(ends)) fail('schedule.until', 'expected start and end birth arrays');
+  count(births.length, 'schedule.until.births'); count(ends.length, 'schedule.until.ends'); finite(offset, 'schedule.until.offset');
+  if (typeof match !== 'function') fail('schedule.until.match', 'expected a pure common-identity callback');
+  const stops = new Map(), token = b => JSON.stringify(identity(match(b), 'schedule.until.match.output'));
+  for (const e of ends) {
+    const id = token(e); if (stops.has(id)) fail('schedule.until.ends', 'duplicate end match; choose one end per identity explicitly');
+    stops.set(id, finite(e.born, 'schedule.until.end.born'));
+  }
+  const ids = new Set();
+  return births.map(b => {
+    identity(b.id, 'schedule.until.birth.id'); if (ids.has(JSON.stringify(b.id))) fail('schedule.until.birth.id', 'duplicate birth identity'); ids.add(JSON.stringify(b.id));
+    const id = token(b); if (!stops.has(id)) fail('schedule.until.match', `no end for ${id}`, 'RESOURCE_NOT_FOUND', 'Provide a matching end birth, or explicitly filter unmatched starts. No lifetime is silently guessed.');
+    const end = finite(stops.get(id) + offset, 'schedule.until.end'), life = positive(end - finite(b.born, 'schedule.until.birth.born'), 'schedule.until.life');
+    return { ...b, end, life };
+  });
+}

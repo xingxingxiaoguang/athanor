@@ -1,13 +1,14 @@
 import { LabError } from './errors.mjs';
-import { packHistory } from './history-storage.mjs';
+import { packHistory, packFrames } from './history-storage.mjs';
 
 export const PARTICLE_UNITS = { status: 'enum', position: 'effect pixels; includes visual offset', basePosition: 'effect pixels; before visual offset', velocity: 'pixels/second; physical, excludes visual offset derivative', age: 'seconds', age01: 'normalized lifetime', simulationAge: 'seconds; exact analytic or last complete 120 Hz force tick', opacity: 'coverage 0..1', scale: 'texture pixel multipliers [x,y]', rotation: 'radians', tint: 'Color32 integer; RGBA bytes, JS signed representation', blend: 'declared dither/soft/additive', tintMode: 'declared multiply/replace', texture: 'resource/frame identity, dimensions and pivot in pixels', offset: 'visual displacement pixels', data: 'author-defined JSON', contact: 'declared phase/contact count/last stable event ID; analytic floor only' };
 export const SOURCE_UNITS = { position: 'effect pixels; source origin', velocity: 'pixels/second; source origin translation', rotation: 'unwrapped radians', angularVelocity: 'radians/second', space: 'coordinate space; effect only', derivative: 'declared method/temporal side/discontinuities or explicit numerical estimate metadata' };
+export const BODY_UNITS = { status: 'pending/alive/expired; declared half-open life', position: 'effect pixels; transformed pivot', velocity: 'pixels/second; pivot trajectory', rotation: 'unwrapped source radians', angularVelocity: 'source radians/second', scale: 'nonnegative geometry multipliers [x,y]', scaleVelocity: 'multipliers/second [x,y]', flipX: 'static local x reflection', opacity: 'coverage 0..1', depth: 'author-declared ordering; larger drawn later', matrix: 'Canvas-order [a,b,c,d,tx,ty], local to effect', matrixVelocity: 'time derivative of local-to-effect matrix, per second', localBounds: 'declared local [x,y,width,height] or null; not pixel-inferred', bounds: 'transformed declared quad and effect-space AABB, or null; not silhouette', anchors: 'declared named effect positions and chain-rule velocities', data: 'author-defined finite JSON', space: 'effect', derivative: 'source provenance and scale/opacity/depth channel discontinuities' };
 export const CONTACT_UNITS = { time: 'effect seconds; solver event time, not nearest output frame', age: 'parent particle seconds', position: 'effect pixels; physical contact point before visual offset', normal: 'unit vector into free space', velocityBefore: 'pixels/second', velocityAfter: 'pixels/second; null for kill', ordinal: 'zero-based contact count per parent copy', precision: 'double-precision ballistic time bracket in parent age seconds; timeErrorMax in seconds', id: 'stable layer/parent/collider/ordinal tuple identity', response: 'bounce/settle/stop/kill', data: 'parent author-defined JSON' };
 export const TRAIL_UNITS = { velocity: 'optional physical pixels/second; interpolated trim velocity only when both endpoints declare it, not a new physics sample', time: 'requested effect seconds per retained point', simulationTime: 'actual motion clock; force tracks hold the last complete 120 Hz tick', position: 'effect pixels; declared render or physical position', s: 'normalized retained polyline arc length, oldest 0 to head 1', time01: 'normalized retained time span, oldest 0 to head 1', ageSeconds: 'observation time minus point time, seconds', historyAge: 'head time minus point time, seconds; freezes during fade', lengthPx: 'sampled connected polyline pixels; gaps excluded', breakBefore: 'no segment connects the preceding point', interpolated: 'true for pixel-limit trim on sampled segment; not a new physics sample' };
-export const PROBE_FIELDS = [...new Set([...Object.keys(PARTICLE_UNITS), ...Object.keys(SOURCE_UNITS)])];
+export const PROBE_FIELDS = [...new Set([...Object.keys(PARTICLE_UNITS), ...Object.keys(SOURCE_UNITS), ...Object.keys(BODY_UNITS)])];
 
-const mismatch = (message) => { throw new LabError('CONTRACT_MISMATCH', `observe(): ${message}`, { recovery: 'Inspect core/particle, core/motion, core/contact or core/trail for the optional particle/source/contact/trail protocols. Return finite JSON data and stable unique identities; leave unsupported internals undeclared.' }); };
+const mismatch = (message) => { throw new LabError('CONTRACT_MISMATCH', `observe(): ${message}`, { recovery: 'Inspect core/particle, core/motion, core/contact, core/trail or core/body for the optional particle/source/contact/trail/body protocols. Return finite JSON data and stable unique identities; leave unsupported internals undeclared.' }); };
 function portable(value, path) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
   if (typeof value === 'number' && Number.isFinite(value)) return;
@@ -16,8 +17,8 @@ function portable(value, path) {
   mismatch(`${path} must be plain finite JSON data`);
 }
 export function normalizeObservation(input) {
-  const kinds = ['particles', 'sources', 'contacts', 'trails'];
-  if (!input || !kinds.some((k) => Array.isArray(input[k])) || Object.keys(input).some((k) => !kinds.includes(k)) || kinds.some((k) => input[k] !== undefined && !Array.isArray(input[k]))) mismatch('expected particle/source/contact/trail observation arrays; declare at least one supported kind');
+  const kinds = ['particles', 'sources', 'contacts', 'trails', 'bodies'];
+  if (!input || !kinds.some((k) => Array.isArray(input[k])) || Object.keys(input).some((k) => !kinds.includes(k)) || kinds.some((k) => input[k] !== undefined && !Array.isArray(input[k]))) mismatch('expected particle/source/contact/trail/body observation arrays; declare at least one supported kind');
   portable(input, 'observation');
   const groups = new Set();
   for (const group of input.particles ?? []) {
@@ -48,6 +49,19 @@ export function normalizeObservation(input) {
   }
   const contactGroups = new Set(), eventIds = new Set(); let eventCount = 0;
   const vector = (v) => Array.isArray(v) && v.length === 2 && v.every(Number.isFinite);
+  const bodyIds = new Set();
+  if ((input.bodies?.length ?? 0) > 64) mismatch('at most 64 declared bodies are supported');
+  for (const b of input.bodies ?? []) {
+    if (b.kind !== 'BodyObservation' || typeof b.id !== 'string' || !b.id || bodyIds.has(b.id) || b.space !== 'effect') mismatch('bodies require BodyObservation, unique string IDs and effect space');
+    bodyIds.add(b.id);
+    if (!['pending','alive','expired'].includes(b.status) || !vector(b.position) || !vector(b.velocity) || !vector(b.scale) || !vector(b.scaleVelocity) || b.scale.some(v => v < 0)) mismatch('body status/position/velocity/scale is invalid');
+    if (!Number.isFinite(b.born) || b.born < 0 || (b.end !== null && !(Number.isFinite(b.end) && b.end > b.born))) mismatch('body born/end must declare a finite ordered interval or null end');
+    if (![b.rotation,b.angularVelocity,b.depth].every(Number.isFinite) || !(b.opacity >= 0 && b.opacity <= 1) || typeof b.flipX !== 'boolean' || !b.derivative || typeof b.derivative.method !== 'string') mismatch('body transform/provenance must be finite and declared');
+    if (![b.matrix,b.matrixVelocity].every(m => Array.isArray(m) && m.length === 6 && m.every(Number.isFinite))) mismatch('body matrices must contain six finite coefficients');
+    if (b.localBounds !== null && (!Array.isArray(b.localBounds) || b.localBounds.length !== 4 || !b.localBounds.every(Number.isFinite) || b.localBounds[2] < 0 || b.localBounds[3] < 0)) mismatch('body localBounds must be a finite nonnegative rectangle or null');
+    if (b.bounds !== null && (!Array.isArray(b.bounds?.corners) || b.bounds.corners.length !== 4 || !b.bounds.corners.every(vector) || !Array.isArray(b.bounds.rect) || b.bounds.rect.length !== 4 || !b.bounds.rect.every(Number.isFinite) || b.bounds.rect[2] < 0 || b.bounds.rect[3] < 0)) mismatch('body bounds require four finite corners and an AABB');
+    if (!b.anchors || Object.getPrototypeOf(b.anchors) !== Object.prototype || Object.keys(b.anchors).length > 64 || Object.values(b.anchors).some(a => !vector(a.position) || !vector(a.velocity))) mismatch('body anchors require named finite position/velocity pairs');
+  }
   for (const group of input.contacts ?? []) {
     if (group.kind !== 'ContactObservation' || typeof group.id !== 'string' || !group.id || contactGroups.has(group.id) || !Array.isArray(group.parents) || !Array.isArray(group.events)) mismatch('contact groups require unique IDs, parents and complete events');
     contactGroups.add(group.id);
@@ -80,7 +94,7 @@ export function normalizeObservation(input) {
     }
   }
   if (retainedPoints > 10000) mismatch('at most 10000 retained trail points per observed frame');
-  return JSON.parse(JSON.stringify(input));
+  return JSON.parse(JSON.stringify({ ...input, ...(input.bodies ? { bodies: [...input.bodies].sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0) } : {}) }));
 }
 
 export function observationSeries(frames) {
@@ -89,14 +103,18 @@ export function observationSeries(frames) {
   if (!first) mismatch('observer must be available at every saved time');
   const groups = first.particles ?? [], sourceLayers = (first.sources ?? []).map(({ id, space }) => ({ id, space })), sourceSignature = JSON.stringify(sourceLayers), contactLayers = first.contacts ?? [], contactSignature = JSON.stringify(contactLayers);
   const trailLayers = (first.trails ?? []).map(({ id, tracks }) => ({ id, tracks })), trailSignature = JSON.stringify(trailLayers);
+  const bodyDescriptors = observation => (observation.bodies ?? []).map(({id,space,born,end,localBounds}) => ({id,space,born,end,localBounds}));
+  const bodyLayers = bodyDescriptors(first), bodySignature = JSON.stringify(bodyLayers);
   const layers = groups.map(({ id, births }) => ({ id, births })), signature = JSON.stringify(layers);
   for (const frame of frames) {
     if (!frame.observation || JSON.stringify((frame.observation.particles ?? []).map(({ id, births }) => ({ id, births }))) !== signature) mismatch('group identities and birth attributes must remain stable across a run; use states for changing values');
     if (JSON.stringify((frame.observation.sources ?? []).map(({ id, space }) => ({ id, space }))) !== sourceSignature) mismatch('source identities/spaces must remain stable at every saved time');
     if (JSON.stringify((frame.observation.trails ?? []).map(({ id, tracks }) => ({ id, tracks }))) !== trailSignature) mismatch('trail groups/track descriptors must remain stable across a run');
     if (JSON.stringify(frame.observation.contacts ?? []) !== contactSignature) mismatch('contact parent/event tables must remain immutable across the run; use contact.observe(emitter), not an accumulated callback list');
+    if (JSON.stringify(bodyDescriptors(frame.observation)) !== bodySignature) mismatch('body identities/lifetimes/local bounds must remain stable across a run; use states/data for changing values');
   }
-  const result = packHistory({ version: 1, layers, ...(sourceLayers.length ? { sourceLayers } : {}), ...(trailLayers.length ? { trailLayers } : {}), ...(contactLayers.length ? { contactLayers } : {}), frames: frames.map((f, index) => ({ index, t: f.t, simulationTime: f.simulationTime, localTime: f.localTime, particles: (f.observation.particles ?? []).map(({ id, states }) => ({ id, states })), ...(sourceLayers.length ? { sources: f.observation.sources } : {}), ...(trailLayers.length ? { trails: (f.observation.trails ?? []).map(({id,states}) => ({id,states})) } : {}) })) });
-  if (Buffer.byteLength(JSON.stringify(result)) > 16_000_000) throw new LabError('BUDGET_EXCEEDED', 'Observations exceed 16 MB; reduce declared groups/sources or particle count. Samples and identities are never silently dropped.');
-  return result;
+  const result = packHistory({ version: 1, layers, ...(sourceLayers.length ? { sourceLayers } : {}), ...(trailLayers.length ? { trailLayers } : {}), ...(contactLayers.length ? { contactLayers } : {}), ...(bodyLayers.length ? { bodyLayers } : {}), frames: frames.map((f, index) => ({ index, t: f.t, simulationTime: f.simulationTime, localTime: f.localTime, particles: (f.observation.particles ?? []).map(({ id, states }) => ({ id, states })), ...(sourceLayers.length ? { sources: f.observation.sources } : {}), ...(bodyLayers.length ? { bodies: f.observation.bodies } : {}), ...(trailLayers.length ? { trails: (f.observation.trails ?? []).map(({id,states}) => ({id,states})) } : {}) })) });
+  const stored=packFrames(result),storedBytes=Buffer.byteLength(JSON.stringify(stored));
+  if (storedBytes > 16_000_000) throw new LabError('BUDGET_EXCEEDED', 'Stored observations exceed 16 MB after lossless packing',{details:{storedBytes,storedLimit:16_000_000},recovery:'Reduce declared groups/sources or particle count; no state is silently dropped.'});
+  return stored;
 }

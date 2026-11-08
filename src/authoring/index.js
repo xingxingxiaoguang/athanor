@@ -15,4 +15,16 @@ export * as particle from './particle.js';
 export * as material from './material.js';
 export * as contact from './contact.js';
 export * as trail from './trail.js';
+export * as propagation from './propagation.js';
+export * as body from './body.js';
+export * as orbit from './orbit.js';
+export * as action from './action.js';
+export * as surface from './surface.js';
+export * as combat from './combat.js';
+export * as skill from './skill.js';
+export * as status from './status.js';
+export * as gather from './gather.js';
 export { AuthoringError } from './contract.js';
+
+export * as ray from './ray.js';
+export * as arc from './arc.js';

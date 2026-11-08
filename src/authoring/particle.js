@@ -92,6 +92,12 @@ export function emitter({ id, births, seed = 1, domain: region, measure = 'area'
     const inheritance = number(inheritVelocity, context, 'inheritVelocity', 0);
     const pointVelocity = [source.velocity[0] - source.angularVelocity * offset[1], source.velocity[1] + source.angularVelocity * offset[0]];
     velocity = velocity.map((v, i) => v + pointVelocity[i] * inheritance);
+    // Explicit effect-space impulse after source inheritance, including baked
+    // material-surface point velocity; old emitters retain identical behavior.
+    if (attrs.velocityOffset !== undefined) {
+      const extra = point(typeof attrs.velocityOffset === 'function' ? attrs.velocityOffset(context) : attrs.velocityOffset, 'particle.initial.velocityOffset');
+      velocity = velocity.map((v, i) => v + extra[i]);
+    }
     const scale = number(attrs.scale, context, 'scale', 1), scaleY = number(attrs.scaleY, context, 'scaleY', 1), opacity = alpha(number(attrs.opacity, context, 'opacity', 1), 'particle.initial.opacity');
     const resource = resources?.find((r) => rand('texture', 0, totalWeight) < r.until)?.resource ?? material.texture ?? null;
     const frameOffset = number(attrs.frameOffset, context, 'frameOffset', 0);

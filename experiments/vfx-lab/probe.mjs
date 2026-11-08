@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { readRun, RECORDS, compare } from './lab.mjs';
 import { withFrozenRun } from './replay.mjs';
-import { observationSeries, PARTICLE_UNITS as units, SOURCE_UNITS, CONTACT_UNITS, TRAIL_UNITS } from './observation.mjs';
+import { observationSeries, PARTICLE_UNITS as units, SOURCE_UNITS, CONTACT_UNITS, TRAIL_UNITS, BODY_UNITS } from './observation.mjs';
+import { bodyProbe } from './body-probe.mjs';
 import { LabError } from './errors.mjs';
 import { expandHistory } from './history-storage.mjs';
 import { canvas } from '../../tools/lib/fxlib.mjs';
@@ -16,48 +17,70 @@ function timesFor(m, at) {
   if (!Object.hasOwn(m.events, at.event)) throw new LabError('RESOURCE_NOT_FOUND', `Run has no event '${at.event}'`, { details: { events: m.events } });
   return (at.offsets ?? [-0.1, 0, 0.1]).map((offset) => m.events[at.event] + offset);
 }
-function unavailable(kind = 'particle') { throw new LabError('CAPABILITY_UNSUPPORTED', `This run has no declared ${kind} observations`, { recovery: kind === 'history trail' ? 'Declare trails:[trail.observe(history,t)] in observe(); render a new revision explicitly. Old particle samples do not imply history. Inspect core/trail.' : kind === 'source' ? 'Declare actual sources with motion.observeSource() in observe(). Render a new revision explicitly; old runs are not backfilled from pixels or synthetic particles. Inspect core/motion.' : 'Use preview/color/light/combined for old effects. New effects can export observe(t,o) with particle.observe(); inspect core/particle. Rendering a new revision is an explicit action; old pixels do not imply particle identity.' }); }
+function unavailable(kind = 'particle') { throw new LabError('CAPABILITY_UNSUPPORTED', `This run has no declared ${kind} observations`, { recovery: kind === 'program body' ? 'Declare bodies:[body.observe(subject,t)] in observe(), then explicitly render a new revision. Old pixels/particles do not imply body identity. Inspect core/body.' : kind === 'history trail' ? 'Declare trails:[trail.observe(history,t)] in observe(); render a new revision explicitly. Old particle samples do not imply history. Inspect core/trail.' : kind === 'source' ? 'Declare actual sources with motion.observeSource() in observe(). Render a new revision explicitly; old runs are not backfilled from pixels or synthetic particles. Inspect core/motion.' : 'Use preview/color/light/combined for old effects. New effects can export observe(t,o) with particle.observe(); inspect core/particle. Rendering a new revision is an explicit action; old pixels do not imply particle identity.' }); }
 
-export async function probe({ run, at, view = 'color', sampling = 'saved', layers, particles, fields, tracks, limit = 12, window }) {
+export async function probe({ run, at, view = 'color', sampling = 'saved', layers, particles, fields, tracks, limit = 12, window, layout, selection = 'active' }) {
+  const imageView = ['preview', 'color', 'light', 'combined'].includes(view);
   if (tracks && view !== 'trails') throw new LabError('CAPABILITY_UNSUPPORTED', 'tracks selects declared history trails only');
   if (view === 'trails' && (fields || particles)) throw new LabError('CAPABILITY_UNSUPPORTED', 'History probes return complete sampled points; use tracks IDs, not fields/particles');
-  if (window && view !== 'contacts') throw new LabError('CAPABILITY_UNSUPPORTED', 'window selects contact-event intervals only; use at for point/image observations');
-  if (view === 'contacts') return contactProbe({ run, at, sampling, layers, particles, fields, limit, window });
-  const m = readRun(run), desired = timesFor(m, at), times = desired.map((t) => Math.max(0, Math.min(m.duration, t)));
-  if (['preview', 'color', 'light', 'combined'].includes(view)) {
+  if (layout && !imageView && view !== 'bodies') throw new LabError('CAPABILITY_UNSUPPORTED', 'Native page layout applies to saved image channels and body state pages only');
+  if (window && !imageView && view !== 'contacts') throw new LabError('CAPABILITY_UNSUPPORTED', 'Use at for declared point/history observations; window is for saved image channels or contact events');
+  if (window && at) throw new LabError('INVALID_INPUT', 'Choose window or at, not both');
+  if (view === 'contacts') {
+    if (window?.event !== undefined || window?.every !== undefined) throw new LabError('CAPABILITY_UNSUPPORTED', 'Contact event windows use absolute from/to and no image sampling step');
+    return contactProbe({ run, at, sampling, layers, particles, fields, limit, window });
+  }
+  const m = readRun(run), desired = window ? [] : timesFor(m, at), times = desired.map((t) => Math.max(0, Math.min(m.duration, t)));
+  if (imageView) {
     if (sampling !== 'saved' || layers || particles || fields) throw new LabError('CAPABILITY_UNSUPPORTED', 'Image channel probe reads saved whole-effect frames; particle fields, layer isolation and image replay are not implemented');
-    const result = compare({ runs: [run], alignment: 'time', times, channel: view });
-    const report = { ...result, probeRef: `probe-${randomUUID()}`, targetRun: run, sourceDigest: m.sourceDigest, requestedTimes: desired, samples: result.samples.map((s, i) => ({ ...s, requested: desired[i], clamped: desired[i] !== times[i] })), scope: 'whole effect, saved channel only', detailRef: join(RECORDS, result.run, 'probe.json') };
+    const result = compare({ runs: [run], ...(window ? { window, alignment: window.event ? 'event' : 'time' } : { alignment: 'time', times }), channel: view, layout });
+    const requested = window ? result.samples.map(s => s.requested) : desired;
+    const report = { ...result, probeRef: `probe-${randomUUID()}`, targetRun: run, sourceDigest: m.sourceDigest, requestedTimes: requested, samples: window ? result.samples : result.samples.map((s, i) => ({ ...s, requested: desired[i], clamped: desired[i] !== times[i] })), scope: 'whole effect, saved channel only', detailRef: join(RECORDS, result.run, 'probe.json') };
     writeFileSync(report.detailRef, JSON.stringify(report, null, 2)); return report;
   }
-  if (view === 'sources' && particles) throw new LabError('CAPABILITY_UNSUPPORTED', 'Source observations have stable source IDs selected with layers; they do not have particle births');
-  fields ??= view === 'trails' ? [] : view === 'sources' ? ['position', 'velocity', 'rotation', 'angularVelocity', 'derivative'] : ['position', 'velocity', 'age01', 'opacity', 'texture'];
-  const availableFields = view === 'sources' ? SOURCE_UNITS : units;
+  if (['sources','bodies'].includes(view) && particles) throw new LabError('CAPABILITY_UNSUPPORTED', 'Source/body observations have stable IDs selected with layers; they do not have particle births');
+  fields ??= view === 'trails' ? [] : view === 'bodies' ? ['position','rotation','scale','opacity','bounds','anchors','data'] : view === 'sources' ? ['position', 'velocity', 'rotation', 'angularVelocity', 'derivative'] : ['position', 'velocity', 'age01', 'opacity', 'texture'];
+  const availableFields = view === 'bodies' ? BODY_UNITS : view === 'sources' ? SOURCE_UNITS : units;
   for (const field of fields) if (!Object.hasOwn(availableFields, field)) throw new LabError('CAPABILITY_UNSUPPORTED', `Field '${field}' is unavailable for view '${view}'`, { details: { fields: Object.keys(availableFields) } });
   let series, actual;
   if (sampling === 'saved') {
-    if (!m.observation) unavailable(view === 'sources' ? 'source' : view === 'trails' ? 'history trail' : 'particle');
+    if (!m.observation) unavailable(view === 'bodies' ? 'program body' : view === 'sources' ? 'source' : view === 'trails' ? 'history trail' : 'particle');
     const file = join(RECORDS, run, m.observation.file);
     let source;
     try { source = readFileSync(file, 'utf8'); } catch { throw new LabError('CONTRACT_MISMATCH', 'Saved observation evidence is missing', { path: file }); }
     if (digest(source) !== m.observation.sha256) throw new LabError('CONTRACT_MISMATCH', 'Saved observation digest differs from manifest', { path: file });
-    series = JSON.parse(source);
+    series = expandHistory(JSON.parse(source));
     actual = times.map((t) => series.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
   } else {
     const unique = [...new Set(times)].sort((a, b) => a - b);
     const frames = await withFrozenRun(m, join(RECORDS, run), (backend) => backend.sample(backend.fx, unique, m.options, { observe: true, background: 'none' }));
-    series = observationSeries(frames); if (!series) unavailable(view === 'sources' ? 'source' : view === 'trails' ? 'history trail' : 'particle');
+    series = observationSeries(frames); if (!series) unavailable(view === 'bodies' ? 'program body' : view === 'sources' ? 'source' : view === 'trails' ? 'history trail' : 'particle');
+    series = expandHistory(series);
     actual = times.map((t) => series.frames[unique.indexOf(t)]);
   }
   if (view === 'trails') { const expanded = expandHistory(series); actual = actual.map(frame => expanded.frames[frame.index]); return trailProbe({ m, run, sampling, series: expanded, actual, desired, times, layers, tracks, limit }); }
   if (view === 'sources') return sourceProbe({ m, run, sampling, series, actual, desired, times, layers, fields, limit });
+  if (view === 'bodies') return bodyProbe({m,run,sampling,series,actual,desired,times,layers,fields,limit,layout,records:RECORDS});
   if (!series.layers.length) unavailable();
   const selectedLayers = layers ?? series.layers.map((g) => g.id);
   for (const id of selectedLayers) if (!series.layers.some((g) => g.id === id)) throw new LabError('RESOURCE_NOT_FOUND', `No declared particle group '${id}'`, { details: { layers: series.layers.map((g) => g.id) } });
   const births = series.layers.filter((g) => selectedLayers.includes(g.id)).flatMap((g) => g.births.map((birth) => ({ ...birth, layer: g.id })));
   const allIds = [...new Set(births.map((b) => b.id))];
   for (const id of particles ?? []) if (!allIds.includes(id)) throw new LabError('RESOURCE_NOT_FOUND', `No declared particle '${id}' in selected groups`, { details: { exampleIds: allIds.slice(0, 12), total: allIds.length } });
-  const selected = particles ? births.filter((b) => particles.includes(b.id)) : births.slice(0, limit);
+  const key = (layer, id) => JSON.stringify([layer, id]);
+  const anchorTime = Math.max(...actual.map(f => f.t)), active = new Set(), atAnchor = new Set();
+  for (const frame of actual) for (const g of frame.particles) if (selectedLayers.includes(g.id)) for (const s of g.states) if (s.status === 'alive') {
+    active.add(key(g.id, s.id)); if (frame.t === anchorTime) atAnchor.add(key(g.id, s.id));
+  }
+  // Preserve latest-time priority, then distribute each tier across groups.
+  // A dense first group must not consume the whole default inspection budget.
+  const interleave=items=>{
+    const groups=selectedLayers.map(layer=>items.filter(b=>b.layer===layer)),out=[];
+    for(let i=0;groups.some(g=>i<g.length);i++)for(const group of groups)if(group[i])out.push(group[i]);
+    return out;
+  };
+  const candidates = selection === 'birth-order' ? births : [...interleave(births.filter(b => atAnchor.has(key(b.layer, b.id)))), ...interleave(births.filter(b => active.has(key(b.layer, b.id)) && !atAnchor.has(key(b.layer, b.id))))];
+  const selected = particles ? births.filter((b) => particles.includes(b.id)) : candidates.slice(0, limit);
   const selectedKeys = new Set(selected.map((b) => JSON.stringify([b.layer, b.id])));
   const samples = actual.map((frame, i) => ({ requested: desired[i], actual: frame.t, simulationTime: frame.simulationTime, localTime: frame.localTime, samplingError: frame.t - times[i], clamped: desired[i] !== times[i],
     states: frame.particles.filter((g) => selectedLayers.includes(g.id)).flatMap((g) => g.states.filter((s) => selectedKeys.has(JSON.stringify([g.id, s.id]))).map((s) => ({ layer: g.id, id: s.id, status: s.status, ...Object.fromEntries(fields.filter((f) => Object.hasOwn(s, f)).map((f) => [f, s[f]])) }))),
@@ -88,7 +111,8 @@ export async function probe({ run, at, view = 'color', sampling = 'saved', layer
   }
   const probeRef = `probe-${randomUUID()}`, directory = join(RECORDS, run, probeRef); mkdirSync(directory);
   const result = { probeRef, targetRun: run, sourceDigest: m.sourceDigest, representation: sampling === 'saved' ? 'saved-observations' : 'frozen-source-replay', view, pixelScale: 1, units: Object.fromEntries(fields.map((f) => [f, units[f]])), births: selected, samples,
-    selection: { layers: selectedLayers, mode: particles ? 'explicit particle IDs' : 'first births in declared order', totalBirths: births.length, selectedBirths: selected.length, omittedBirths: births.length - selected.length },
+    selection: { layers: selectedLayers, mode: particles ? 'explicit particle IDs' : selection === 'birth-order' ? 'first births in declared order' : 'alive at latest sampled time, then other sampled times; round-robin groups in each tier', anchorTime, activeCandidates: active.size, totalBirths: births.length, selectedBirths: selected.length, omittedBirths: births.length - selected.length, omittedActive: particles ? null : [...active].filter(k => !selectedKeys.has(k)).length,
+      groups:selectedLayers.map(layer=>({id:layer,activeCandidates:births.filter(b=>b.layer===layer&&active.has(key(layer,b.id))).length,selected: selected.filter(b=>b.layer===layer).length,omittedActive:births.filter(b=>b.layer===layer&&active.has(key(layer,b.id))&&!selectedKeys.has(key(layer,b.id))).length})) },
     scope: 'Author-declared particle data in effect coordinates. Physical velocity excludes visual offsets. Lines connect observed positions only; hidden layers, arbitrary fields and modifier removal are unsupported.',
     image: join(directory, 'probe.png'), detailRef: join(directory, 'probe.json'), aestheticScore: null };
   writeFileSync(result.image, sheet.png()); writeFileSync(result.detailRef, JSON.stringify(result, null, 2)); return result;
