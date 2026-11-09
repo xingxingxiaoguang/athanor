@@ -208,7 +208,7 @@ node experiments/vfx-lab/cli.mjs inspect '{"id":"lab/source-shuttle"}'
 node experiments/vfx-lab/cli.mjs render '{"id":"lab/source-shuttle"}'
 ```
 
-默认按右时间侧处理停顿/折点，left/error可显式选择，返回导数策略与corner/jump提示；hold跳跃没有有限穿越速度。PathSource不从分段切线伪造平滑角速度。任意函数可用sampledSource，但必须指定固定秒距与范围，结果报告差分模板与未知误差界，不依赖输出fps。精确单位/签名见公开API；代码来源、技术回归与独立创作范围分别记录在[当轮归档](evaluations/2026-11-06-source-trajectory/README.md)。
+默认按右时间侧处理停顿/折点，left/error可显式选择，返回导数策略与corner/jump提示；hold跳跃没有有限穿越速度。PathSource不从分段切线伪造平滑角速度。任意函数可用sampledSource，但必须指定固定秒距与范围，结果报告差分模板与未知误差界，不依赖输出fps。精确单位/签名见公开API；代码来源、技术回归与独立创作范围分别记录在[验收规范](../../docs/ai-vfx-tools/creator-evaluation.md)。
 
 源本身也可真实观测：`observe(t,o)`返回`sources:[motion.observeSource(axis,t,{id:'axis'})]`，与particles数组可共存；`probe {run,view:'sources',layers:['axis'],at:{times:[...]}}`直接读源位置、平移/角速度及导数策略。无需造不绘制的粒子来查看轴状态；默认保存证据/显式冻结重放沿用原身份规则。旧run未声明源时明确不支持，effect之外的空间需显式转换。
 
@@ -216,7 +216,7 @@ node experiments/vfx-lab/cli.mjs render '{"id":"lab/source-shuttle"}'
 
 `core/contact`提供点主体对静态水平面的解析接触，以及反弹/停留/停止/死亡响应。`contact.events`纯读取，`contact.births`依事件身份生成稳定子出生；不随draw、输出fps或窗口读取重复触发。直接复用原库水滴/涟漪画法的waterDrop/ripple可独立替换。参看可运行`lab/landing-relay`、contact-response配方和公开API。
 
-`observe`可声明完整contacts表；`probe {run,view:"contacts",window:{from:0,to:1},limit:24}`读取保存事件或显式冻结重放，不使用最近帧时间。该视图不接受at/fields，layers为事件组、particles为父ID。范围为effect空间、恒加速度/分轴阻力；不与force/trajectory/kill混用，不是任意形状碰撞。独立创作与实际边界见[测评归档](evaluations/2026-11-06-contact-events/README.md)。
+`observe`可声明完整contacts表；`probe {run,view:"contacts",window:{from:0,to:1},limit:24}`读取保存事件或显式冻结重放，不使用最近帧时间。该视图不接受at/fields，layers为事件组、particles为父ID。范围为effect空间、恒加速度/分轴阻力；不与force/trajectory/kill混用，不是任意形状碰撞。独立创作与实际边界见[验收规范](../../docs/ai-vfx-tools/creator-evaluation.md)。
 
 ## 真实历史拖尾
 
@@ -224,7 +224,7 @@ node experiments/vfx-lab/cli.mjs render '{"id":"lab/source-shuttle"}'
 
 `observe`声明trails后，`probe {run,view:"trails",at:{times:[1.2,1.8]},sampling:"saved"}`返回真实历史frame、点时间/实际运动时钟和原尺寸点图；layers选择组、tracks选择稳定trail ID。replay从冻结后端重建，旧run不补造。默认12条，结果报告省略数；该视图不接受fields/particles/window。
 
-当前只保证所声明时间采样和折线语义，不保证任意曲线的空间误差。每轨道<=12秒，maxSamples默认2048、最高4096；整frame最多20000次求值/10000点，所有观察共享16MB，超限拒绝不默默降采样。自定义跳变必须显式声明，replacement trajectory的终点不猜测。独立原创、修复与剩余负担见[当轮测评](evaluations/2026-11-06-history-trails/README.md)。
+当前只保证所声明时间采样和折线语义，不保证任意曲线的空间误差。每轨道<=12秒，maxSamples默认2048、最高4096；整frame最多20000次求值/10000点，所有观察共享16MB，超限拒绝不默默降采样。自定义跳变必须显式声明，replacement trajectory的终点不猜测。独立原创、修复与剩余负担见[验收规范](../../docs/ai-vfx-tools/creator-evaluation.md)。
 
 ## 动作、目标表面与完整观察
 

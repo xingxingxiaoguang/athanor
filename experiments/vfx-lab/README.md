@@ -2,7 +2,7 @@
 
 用普通 JavaScript 制作特效，通过结构化工具查找、运行、看原图、局改和交付。主角是 AI 创作者；人类可预览和反馈，创作不依赖操作参数编辑器。
 
-继续已有作品先看[生产索引](productions/README.md)。当前持久入口是`lab/fireball-master`和`lab/smoke-master`；它们随Git保存，不依赖本机drafts。
+查找可复用资产先运行 `npm run assets -- list`，用 `inspect <category/name>` 获取完整依赖与来源。最新火球和烟体是 `studies/sunbreak`、`studies/drift`；其他原创作品同在 `studies/`。源码母版组织见[资产规范](../../docs/ASSETS.md)。
 
 ## 先得到一个可见草稿
 
@@ -44,7 +44,7 @@ node experiments/vfx-lab/cli.mjs tools '{"name":"fx_probe"}'
 node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"operator","id":"core/particle"}}'
 ```
 
-[工具分工](../../docs/ai-vfx-tools/tool-contracts.md)帮助选入口，[公开 API](../../docs/ai-vfx-tools/authoring-api.md)供查签名。CLI 返回一行 JSON，也接受 stdin；MCP 入口为本目录 mcp.mjs，HTTP/可选本地页面用 npm run lab。三个调用端共用定义。
+[工具分工](../../docs/ai-vfx-tools/tool-contracts.md)帮助选入口，[公开 API](../../docs/ai-vfx-tools/authoring-api.md)供查签名。CLI 返回一行 JSON，也接受 stdin；MCP 入口为本目录 mcp.mjs，HTTP/唯一通用演示台用 npm run demo。三个调用端共用定义。
 
 所有公共调用会记录 callRef；原错误和结果用 history 找回。id 是当前源码，run 是保存版本；修改当前文件不会改写旧图像。probe/compare 返回保存时刻与实际误差，不从画面猜没有声明的对象。
 
@@ -57,3 +57,5 @@ export 默认保留精确图集、色层和加法光层，MP4/GIF 是可选预�
 正式收录用 library 的 plan/install/status/recover：以选定、验证通过的冻结 run 计划搬运和逐帧核对，再按用户已有的准确批准范围执行。既有批准不重复确认；作者选版或技术通过不自动成为用户审批。[完整入库契约](../../docs/ai-vfx-tools/library-installation.md)。
 
 需要制作什么可以直接从任务开始；研发状态、历史和未来路线不是创作的前置阅读。研发接手走[项目入口](../../docs/ai-vfx-tools/README.md)中的专门链路。
+
+生成记录、图像、各稿和交付只保存至 ignored records；源资产与必要原始资源才入 Git。独立测评只提交轻量原报告、构建摘要与复现步骤。

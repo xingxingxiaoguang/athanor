@@ -3,8 +3,8 @@
 //
 //   node tools/index.mjs
 
-import { writeFileSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { ROOT, FX_DIR, allIds, loadEffect } from "./lib/fxlib.mjs";
 import { registryFiles } from "./lib/registry.mjs";
 import { categories } from "../src/fx/categories.js";
@@ -12,10 +12,12 @@ import { categories } from "../src/fx/categories.js";
 const metas = [];
 for (const id of allIds()) {
   try {
-    metas.push({ id, ...(await loadEffect(id)).meta });
-  } catch (e) {
-    console.error(`skipping ${id}: ${String(e.message ?? e).split("\n")[0]}`);
-  }
+    const fx = await loadEffect(id);
+    metas.push({ id, entry:`src/fx/${id}.js`, status:fx.mod.asset?.status??'library', ...fx.meta });
+  } catch (e) { throw new Error(`Cannot index ${id}: ${e.message}`, {cause:e}); }
 }
-for(const [file,text] of Object.entries(registryFiles(metas,categories,readFileSync(join(ROOT,"README.md"),"utf8")))) writeFileSync(join(ROOT,file),text);
-console.log(`${metas.length} effects -> src/fx/index.js, docs/CATALOG.md`);
+for(const [file,text] of Object.entries(registryFiles(metas,categories))) {
+  mkdirSync(dirname(join(ROOT,file)), {recursive:true});
+  writeFileSync(join(ROOT,file),text);
+}
+console.log(`${metas.length} effects -> .cache/athanor/ (generated, ignored)`);

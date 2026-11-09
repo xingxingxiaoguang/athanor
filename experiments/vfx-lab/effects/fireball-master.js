@@ -1,2 +1,2 @@
-// Persistent authoring entry; production study, not a registered library preset.
-export {meta,authoring,events,draw} from '../productions/2026-11-08-fireball-grenade/fireball-drift.js';
+// Compatibility entry for the latest retained artwork.
+export * from "../../../src/fx/studies/sunbreak.js";

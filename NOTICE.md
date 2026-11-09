@@ -9,5 +9,5 @@ open-source pixel art VFX (https://www.spritefusion.com/pixel-art-vfx), Copyrigh
 straw target), from
 https://github.com/rehan-remade/hollow-crown, Copyright (c) 2026 rehan-remade, MIT License.
 
-**Patch Pixel.** The font in `gallery/fonts` is Patch's own and is not covered by this repository's MIT license. See
-`gallery/fonts/NOTICE.md`.
+**Patch Pixel.** The font in `demo/fonts` is Patch's own and is not covered by this repository's MIT license. See
+`demo/fonts/NOTICE.md`.

@@ -8,8 +8,9 @@ import { TOOLS } from "./definitions.mjs";
 import { invoke } from "./invoke.mjs";
 import { errorResult } from "./errors.mjs";
 import { recordCall } from './journal.mjs';
+import { ROOT } from '../../tools/lib/fxlib.mjs';
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".json": "application/json", ".mp4": "video/mp4", ".gif": "image/gif" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".mjs":"text/javascript", ".woff2":"font/woff2", ".md":"text/plain; charset=utf-8", ".png": "image/png", ".json": "application/json", ".mp4": "video/mp4", ".gif": "image/gif" };
 export function createLabServer() {
   return createServer(async (req, res) => {
     const reply = (status, data) => res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify(data));
@@ -39,7 +40,9 @@ export function createLabServer() {
       if (req.method !== "GET") return reply(405, { error: "Method not allowed" });
       let base, filename;
       if (path.startsWith("/artifacts/")) { base = RECORDS; filename = resolve(base, path.slice(11)); }
-      else if (["/", "/index.html", "/app.js", "/style.css"].includes(path)) { base = LAB; filename = join(base, path === "/" ? "index.html" : path.slice(1)); }
+      else if (["/", "/index.html", "/app.js", "/style.css"].includes(path) || path.startsWith('/fonts/')) { base = join(ROOT,'demo'); filename = resolve(base, path === "/" ? "index.html" : path.slice(1)); }
+      else if(path.startsWith('/src/')) {base=join(ROOT,'src');filename=resolve(base,path.slice(5));}
+      else if(path.startsWith('/.cache/athanor/')) {base=join(ROOT,'.cache/athanor');filename=resolve(base,path.slice(16));}
       else return reply(404, { error: "Not found" });
       const file = realpathSync(filename);
       if (!file.startsWith(base + sep) || !TYPES[extname(file)]) return reply(403, { error: "File not served" });
@@ -49,6 +52,7 @@ export function createLabServer() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  await import('../../tools/index.mjs');
   const port = Number(process.argv[2] ?? 4173);
-  createLabServer().listen(port, "127.0.0.1", () => console.log(`VFX Lab: http://127.0.0.1:${port}`));
+  createLabServer().listen(port, "127.0.0.1", () => console.log(`Athanor: http://127.0.0.1:${port}/`));
 }

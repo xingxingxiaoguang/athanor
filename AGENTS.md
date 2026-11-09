@@ -10,6 +10,10 @@ If `.codegraph/` exists at the repository root, use CodeGraph before text search
 
 The workbench grows from both the existing 200+ effects **and their code implementations**, and the low-level mechanisms of https://tsnm-spine-particle.com/. The effect library is an algorithm/implementation source, not merely a visual reference or a list of needs. Before adding a general creation capability, inspect relevant effects, category helpers and core code; record the concrete implementation paths being extracted, retained or generalized. Cross-check the reference platform's underlying emission, motion, texture, lifetime and other useful mechanisms without recreating its human-facing editor. Preserve attribution on adapted code. Prefer lifting mature behavior into composable, observable operators to either copying a whole preset or independently reinventing existing algorithms.
 
+## Source and generated-output boundary (2026-11-09)
+
+The user's cleanup instruction supersedes earlier retention of bulky tracked evaluations, production revisions and deliveries. Canonical reusable artwork lives in `src/fx/`; preserve required source dependencies, original textures and attribution. The only demo source is `demo/`. Registries, images, exports, build outputs, draft revisions and raw evaluation evidence stay ignored. Commit only compact original evaluation reports, build identity summaries and reproduction instructions; keep raw calls/errors/artwork versions/images under ignored `records/vfx-lab/creator-evaluations/`. Run `npm run assets:check` before committing. See [asset organization](docs/ASSETS.md).
+
 ## Independent creator gate for the VFX workbench
 
 The primary creator is an AI agent. Assess public-contract discovery, structured inputs/results, diagnostic clarity, editing/recovery steps and avoidable code infrastructure from the AI caller's actual use. A convenient human GUI is not the usability target or a required gate; original-scale images remain necessary visual evidence and may be consumed directly through image tools.

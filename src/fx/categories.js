@@ -109,5 +109,6 @@ export const categories = [
     "id": "weapons",
     "name": "weapons",
     "blurb": "top-down battlefield weapons: separate launch, flight, hit and release parts"
-  }
+  },
+  {"id":"studies","name":"studies","blurb":"editable original artwork; art approval is recorded separately"}
 ];

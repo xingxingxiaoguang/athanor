@@ -34,4 +34,4 @@ node experiments/vfx-lab/cli.mjs inspect '{"ref":{"kind":"tool","id":"fx_library
 
 [创作流程](../../experiments/vfx-lab/README.md) → [按问题展开的工作流](../../experiments/vfx-lab/WORKFLOWS.md) → [正式入库细则](library-installation.md)。错误按实际 recovery 恢复，原错误可经 history 查询。
 
-局部复用使用现有inspect/search：effect sections:['reuse']列实际库依赖与导出，mechanism reuse列可替换输入，加source按需读库模块；无需新固定装配DSL。history action:bundle围绕明确run汇集原调用/错误、原图、验证和导出，返回哈希索引及可编辑报告，实际观看仅接受作者声明。完整fx_reuse / fx_explore设想仍在[目标接口设计](design/tool-interface.md)，不属于已交付工具。
+局部复用使用现有inspect/search：effect sections:['reuse']列实际库依赖与导出，mechanism reuse列可替换输入，加source按需读库模块；无需新固定装配DSL。history action:bundle围绕明确run汇集原调用/错误、原图、验证和导出，返回哈希索引及可编辑报告，实际观看仅接受作者声明。尚未实现的通用探索功能不属于当前工具契约。

@@ -88,8 +88,9 @@ for (const id of ids) {
     if (!Array.isArray(meta.origin) || meta.origin.length !== 2) errs.push("meta.origin must be [x, y]");
     if (!(meta.duration > 0 && meta.duration <= 12)) errs.push("meta.duration must be 0..12 s");
     if (!BACKDROPS.includes(meta.bg)) errs.push(`meta.bg must be one of ${BACKDROPS.join(", ")}`);
-    const taken = Object.keys(meta.options ?? {}).filter((k) => ["x", "y", "flip", "angle", "light"].includes(k));
-    if (taken.length) errs.push(`option ${taken.join(", ")} is reserved for placement and glow: rename it`);
+    // light is a supported global default, merged by resolveOptions/createFx.
+    const taken = Object.keys(meta.options ?? {}).filter((k) => ["x", "y", "flip", "angle"].includes(k));
+    if (taken.length) errs.push(`option ${taken.join(", ")} is reserved for placement: rename it`);
     if (/Math\.random/.test(src)) errs.push("uses Math.random: use rng/rand/burst/cycle so frames repeat");
     if (mod.act) checkAct(fx, errs, notes);
     if (errs.length) throw new Error(errs.join("; "));

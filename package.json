@@ -19,13 +19,25 @@
     "render": "node tools/render.mjs",
     "check": "node tools/check.mjs",
     "gallery": "node tools/serve.mjs",
-    "lab": "node experiments/vfx-lab/server.mjs",
+    "lab": "node tools/serve.mjs",
     "lab:tools": "node experiments/vfx-lab/cli.mjs tools",
     "lab:mcp": "node experiments/vfx-lab/mcp.mjs",
-    "lab:test": "node --test --test-concurrency=1 experiments/vfx-lab/test.mjs experiments/vfx-lab/authoring.test.mjs experiments/vfx-lab/particle.test.mjs experiments/vfx-lab/source.test.mjs experiments/vfx-lab/contact.test.mjs experiments/vfx-lab/trail.test.mjs experiments/vfx-lab/animation.test.mjs experiments/vfx-lab/workflow.test.mjs experiments/vfx-lab/viewport.test.mjs experiments/vfx-lab/discovery.test.mjs experiments/vfx-lab/propagation.test.mjs experiments/vfx-lab/body.test.mjs experiments/vfx-lab/action.test.mjs experiments/vfx-lab/surface.test.mjs experiments/vfx-lab/combat.test.mjs experiments/vfx-lab/skill.test.mjs experiments/vfx-lab/status.test.mjs experiments/vfx-lab/assets.test.mjs experiments/vfx-lab/gather.test.mjs experiments/vfx-lab/playback.test.mjs experiments/vfx-lab/ray-arc.test.mjs experiments/vfx-lab/library.test.mjs experiments/vfx-lab/reuse.test.mjs"
+    "lab:test": "node --test --test-concurrency=1 experiments/vfx-lab/test.mjs experiments/vfx-lab/authoring.test.mjs experiments/vfx-lab/particle.test.mjs experiments/vfx-lab/source.test.mjs experiments/vfx-lab/contact.test.mjs experiments/vfx-lab/trail.test.mjs experiments/vfx-lab/animation.test.mjs experiments/vfx-lab/workflow.test.mjs experiments/vfx-lab/viewport.test.mjs experiments/vfx-lab/discovery.test.mjs experiments/vfx-lab/propagation.test.mjs experiments/vfx-lab/body.test.mjs experiments/vfx-lab/action.test.mjs experiments/vfx-lab/surface.test.mjs experiments/vfx-lab/combat.test.mjs experiments/vfx-lab/skill.test.mjs experiments/vfx-lab/status.test.mjs experiments/vfx-lab/assets.test.mjs experiments/vfx-lab/gather.test.mjs experiments/vfx-lab/playback.test.mjs experiments/vfx-lab/ray-arc.test.mjs experiments/vfx-lab/library.test.mjs experiments/vfx-lab/reuse.test.mjs tools/asset-library.test.mjs",
+    "demo": "node tools/serve.mjs",
+    "build": "node tools/build-demo.mjs",
+    "assets": "node tools/assets.mjs",
+    "assets:build": "node tools/index.mjs",
+    "assets:check": "node tools/assets.mjs check",
+    "assets:clean": "node tools/assets.mjs clean",
+    "precommit:check": "node tools/assets.mjs check"
   },
   "devDependencies": {
     "es-module-lexer": "^3.0.4",
     "esbuild": "^0.25.10"
-  }
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "NOTICE.md"
+  ]
 }

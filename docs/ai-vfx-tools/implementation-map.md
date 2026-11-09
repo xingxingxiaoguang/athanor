@@ -1,6 +1,6 @@
 # 实现与复用入口
 
-本文用于定位代码，按当前问题展开。公开调用查[API](authoring-api.md)与[工具入口](tool-contracts.md)；旧版本的逐项提炼、来源和取舍保留在[历史来源笔记](history/implementation-notes-through-1.2.md)。
+本文用于定位代码，按当前问题展开。公开调用查[API](authoring-api.md)与[工具入口](tool-contracts.md)；资产目录与输出边界见[资产规范](../ASSETS.md)。
 
 ## 代码分层
 
@@ -33,4 +33,4 @@
 
 ## 最近作品的实现参考
 
-火球/连续烟体/像素风的代码关系见[作品接手记录](../../experiments/vfx-lab/productions/history/2026-11-08-fireball-smoke.md)。其中共同冷却表面、烟流、像素网格与跨时钟组合仍是作品私有实现；调查重复负担时可读，不作为已交付通用算子。
+火球/连续烟体/像素风的代码关系见`src/fx/studies/` 的当前源码。其中共同冷却表面、烟流、像素网格与跨时钟组合仍是作品私有实现；调查重复负担时可读，不作为已交付通用算子。

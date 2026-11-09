@@ -1,8 +1,20 @@
 node_modules/
+.cache/
 dist/
 records/
 sheets/
+output/
 .DS_Store
 experiments/vfx-lab/drafts/
 output/playwright/
 .playwright-cli/
+# Reproducible deliveries and iteration data never belong in source history.
+experiments/vfx-lab/productions/
+*.gif
+*.mp4
+*.webm
+*.zip
+*.jsonl
+*.log
+*.tap
+*.gz

@@ -8,7 +8,7 @@ compatibility: Node 18 or newer. ffmpeg is optional (GIF and MP4 previews).
 # athanor
 
 Pixel art effects as code. Each effect is one file, `src/fx/<category>/<name>.js`, that draws into two buffers:
-**color** (pixels: opaque, dithered or truly translucent) and **light** (additive glow). No images, so an effect
+**color** (pixels: opaque, dithered or truly translucent) and **light** (additive glow). Declared source textures are optional; an effect
 can be played live, recolored, mirrored, reseeded and rendered to a sprite sheet for any engine.
 
 The method is Hugo Duprez's ([How to make (good) pixel art effects with
@@ -26,7 +26,7 @@ make good ones.
 ## 1. Look for an existing effect first
 
 `node tools/list.mjs <words>` searches ids, names, tags and descriptions (`node tools/list.mjs frost`,
-`node tools/list.mjs slash loop`). `docs/CATALOG.md` lists everything by category. Render the candidates and
+`node tools/list.mjs slash loop`). `node tools/assets.mjs list` lists the canonical assets with structured metadata; `inspect <id>` lists their dependency closures. See `docs/ASSETS.md`. Render the candidates and
 look at them before choosing. Most requests are an existing effect with different options:
 
 - `palette`: the main ramp, dark to bright, as hex strings. Any `PAL` ramp in `src/core/color.js` (fire ember
