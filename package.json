@@ -29,7 +29,12 @@
     "assets:build": "node tools/index.mjs",
     "assets:check": "node tools/assets.mjs check",
     "assets:clean": "node tools/assets.mjs clean",
-    "precommit:check": "node tools/assets.mjs check"
+    "precommit:check": "node tools/repository-guard.mjs staged && node tools/assets.mjs check --staged",
+    "prepare": "node tools/install-hooks.mjs",
+    "hooks:install": "node tools/install-hooks.mjs",
+    "repo:check": "node tools/repository-guard.mjs history",
+    "repo:check:staged": "node tools/repository-guard.mjs staged",
+    "repo:test": "node --test tools/repository-guard.test.mjs"
   },
   "devDependencies": {
     "es-module-lexer": "^3.0.4",

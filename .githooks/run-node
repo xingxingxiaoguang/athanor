@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+runtime=$(git config --get athanor.guardNode || true)
+if [ -z "$runtime" ] || [ ! -x "$runtime" ]; then
+  runtime=$(command -v node || true)
+fi
+if [ -z "$runtime" ]; then
+  echo 'A working Node 18+ is required. Run npm run hooks:install after installing Node.' >&2
+  exit 1
+fi
+exec "$runtime" "$@"

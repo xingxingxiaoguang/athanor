@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+exec "$root/.githooks/run-node" "$root/tools/repository-guard.mjs" push

@@ -1,3 +1,6 @@
 #!/bin/sh
 set -eu
-npm run assets:check -- --staged
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+"$root/.githooks/run-node" "$root/tools/repository-guard.mjs" staged
+"$root/.githooks/run-node" "$root/tools/assets.mjs" check --staged

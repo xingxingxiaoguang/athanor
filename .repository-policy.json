@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "cleanHistoryBase": "68d2b6d7c0ef06328d585bd62d88f066cb639b9b",
+  "protectedRefs": ["refs/heads/main"],
+  "requiredFiles": [".repository-policy.json", ".githooks/pre-commit", ".githooks/pre-push", ".githooks/run-node", ".github/workflows/gallery.yml", "tools/repository-guard.mjs", "tools/install-hooks.mjs"],
+  "maxSourceFileBytes": 1048576,
+  "maxResourceFileBytes": 4194304,
+  "maxTreeBytes": 16777216,
+  "maxHistoryBytes": 67108864,
+  "maxReportFileBytes": 65536,
+  "maxEvaluationBytes": 131072,
+  "maxAllEvaluationsBytes": 524288,
+  "sourceDirectories": [".claude-plugin", ".github", ".githooks", "demo", "docs", "experiments", "skills", "src", "tools"],
+  "rootFiles": [".gitignore", ".gitattributes", ".repository-policy.json", "AGENTS.md", "LICENSE", "NOTICE.md", "README.md", "package.json", "package-lock.json"],
+  "generatedDirectories": [".cache", "records", "dist", "sheets", "output", ".playwright-cli", "node_modules"],
+  "iterationDirectories": ["productions", "revisions", "deliveries", "delivery", "raw-runs", "raw-library", "versions", "_sources"],
+  "generatedPrefixes": ["experiments/vfx-lab/drafts/", "docs/ai-vfx-tools/history/", "docs/ai-vfx-tools/handoff-review/"],
+  "generatedFiles": ["src/fx/index.js", "docs/ai-vfx-tools/inventory.json"],
+  "blockedExtensions": ["gif", "apng", "mp4", "webm", "mov", "avi", "mp3", "wav", "ogg", "zip", "tar", "tgz", "gz", "bz2", "xz", "7z", "rar", "zst", "pdf", "jsonl", "log", "tap"],
+  "htmlEntries": ["demo/index.html"],
+  "pngSourcePatterns": ["^src/fx/[^/]+/_assets/.+\\.png$", "^experiments/vfx-lab/effects/assets/.+\\.png$", "^experiments/vfx-lab/fixtures/png/[^/]+\\.png$"],
+  "fontSourcePattern": "^demo/fonts/[^/]+\\.woff2$"
+}

@@ -34,12 +34,13 @@ node tools/render.mjs ice/frost-nova --sheet
 
 ```sh
 npm run assets:check          # 元数据、完整依赖、来源摘要、仓库产物门禁
+npm run repo:check            # 提交内容、清理基线和完整待推送历史
 npm run lab:test              # 创作/入库/回放测试
 npm run build                # 生成 dist/demo，供静态部署
 npm run assets:clean          # 预览可清理的生成物
 npm run assets:clean -- --apply
 ```
 
-`.cache/`、`records/`、`dist/`、`sheets/`、`output/`、草稿及交付包不入 Git。启用本地提交门禁：`git config core.hooksPath .githooks`；CI 同样检查，防止强制添加生成物。克隆后可从源码重新生成所有预览，不携带历史运行记录。[研发入口](docs/ai-vfx-tools/README.md)。
+`.cache/`、`records/`、`dist/`、`sheets/`、`output/`、草稿及交付包不入 Git。`npm ci` 自动安装提交前和推送前钩子；CI 独立复检。改名伪装、先提交后删除以及旧历史回灌也会检查，详见[仓库护栏](docs/REPOSITORY-GUARDS.md)。克隆后可从源码重新生成所有预览，不携带历史运行记录。[研发入口](docs/ai-vfx-tools/README.md)。
 
 上游来自 [pixelfx / Patch](https://github.com/patch-gg/pixelfx)；部分成熟算法改编自 Sprite Fusion / Hugo Duprez，动作机制参考 Hollow Crown。保留每个源码中的署名、[LICENSE](LICENSE) 和 [NOTICE](NOTICE.md)。演示字体另见 [字体声明](demo/fonts/NOTICE.md)。

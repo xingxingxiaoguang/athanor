@@ -19,3 +19,26 @@ experiments/vfx-lab/productions/
 *.log
 *.tap
 *.gz
+# Media and archives are reproducible outputs, including renamed/case variants
+# caught independently by the Git-byte guard.
+*.apng
+*.mov
+*.avi
+*.mp3
+*.wav
+*.ogg
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+!src/fx/**/_assets/**/*.png
+!experiments/vfx-lab/effects/assets/**/*.png
+!experiments/vfx-lab/fixtures/png/*.png
