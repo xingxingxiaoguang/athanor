@@ -60,5 +60,11 @@ test('commit gate rejects force-added output even after it disappears from the w
     rmSync(join(root,'records/forced.json'));
     const p=spawnSync(process.execPath,[join(root,'tools/assets.mjs'),'check','--staged'],{cwd:root,encoding:'utf8'});
     const result=JSON.parse(p.stdout);assert.equal(p.status,1,p.stderr);assert(result.errors.some(e=>e.file==='records/forced.json'&&e.error.includes('Generated')));
+    execFileSync('ln',['-s',join(root,'src'),join(root,'linked-source')]);
+    execFileSync('git',['add','linked-source'],{cwd:root});
+    for(const args of [[],['--staged']]){
+      const q=spawnSync(process.execPath,[join(root,'tools/assets.mjs'),'check',...args],{cwd:root,encoding:'utf8'}),r=JSON.parse(q.stdout);
+      assert.equal(q.status,1,q.stderr);assert(r.errors.some(e=>e.file==='linked-source'&&e.code==='SOURCE_ENTRY_UNSUPPORTED'&&e.recovery));
+    }
   }finally{rmSync(root,{recursive:true,force:true});}
 });

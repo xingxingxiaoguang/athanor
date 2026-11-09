@@ -1,5 +1,5 @@
 // The editable modules are the catalog. Registries and deliveries are disposable.
-import {readFileSync, existsSync, realpathSync} from 'node:fs';
+import {readFileSync, existsSync, realpathSync, lstatSync} from 'node:fs';
 import {resolve, relative, dirname, sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
@@ -80,14 +80,18 @@ export async function checkLibrary({staged=false} = {}) {
     } catch (error) { errors.push({id:fx.id,error:error.message}); }
   }
   // CI and pre-commit also catch force-added outputs, even when .gitignore hides them.
-  let paths, sizes;
+  let paths, sizes, modes;
   if (staged) {
-    const entries=execFileSync('git',['ls-files','--stage','-z'],{cwd:ROOT,encoding:'utf8'}).split('\0').filter(Boolean).map(row=>{const [metadata,path]=row.split('\t');return {path,blob:metadata.split(' ')[1]};});
+    const entries=execFileSync('git',['ls-files','--stage','-z'],{cwd:ROOT,encoding:'utf8'}).split('\0').filter(Boolean).map(row=>{const [metadata,path]=row.split('\t');return {path,blob:metadata.split(' ')[1],mode:metadata.split(' ')[0]};});
     const stats=execFileSync('git',['cat-file','--batch-check=%(objectsize)'],{cwd:ROOT,input:entries.map(e=>e.blob).join('\n')+'\n',encoding:'utf8'}).trim().split('\n').map(Number);
-    paths=entries.map(e=>e.path);sizes=new Map(entries.map((e,i)=>[e.path,stats[i]]));
+    paths=entries.map(e=>e.path);sizes=new Map(entries.map((e,i)=>[e.path,stats[i]]));modes=new Map(entries.map(e=>[e.path,e.mode]));
   } else paths = execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{cwd:ROOT,encoding:'utf8'}).split('\0').filter(p=>p&&existsSync(resolve(ROOT,p)));
   let bytes=0;
   for (const path of paths) {
+    if(staged ? !['100644','100755'].includes(modes.get(path)) : !lstatSync(resolve(ROOT,path)).isFile()) {
+      errors.push({file:path,code:'SOURCE_ENTRY_UNSUPPORTED',error:'Source entries must be regular files, not symlinks or submodules',recovery:'Remove the link from the Git index; install dependencies with npm ci and store actual source/resource bytes.'});
+      continue;
+    }
     const size=staged?sizes.get(path):readFileSync(resolve(ROOT,path)).length; bytes+=size;
     const output = outputDirectories.some(d=>path.startsWith(d+'/')) || /^experiments\/vfx-lab\/(productions|drafts)\//.test(path)
       || /^docs\/ai-vfx-tools\/(history|handoff-review)\//.test(path)

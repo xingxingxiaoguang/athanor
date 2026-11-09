@@ -199,3 +199,6 @@ pre {
 @media (max-width: 330px) {
   .tile.big { grid-column: auto; grid-row: auto; }
 }
+
+/* Filtering must override tile flex/grid display. */
+[hidden] { display: none !important; }
