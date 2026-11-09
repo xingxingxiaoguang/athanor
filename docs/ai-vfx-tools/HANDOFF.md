@@ -1,6 +1,6 @@
 # 研发接手
 
-更新：2026-11-08。分支 `codex/ai-vfx-lab-mvp`。面向下一位研发者；黑盒创作者只从[公开创作者指南](../../experiments/vfx-lab/README.md)开始。
+更新：2026-11-09。分支 `codex/ai-vfx-lab-mvp`。面向下一位研发者；黑盒创作者只从[公开创作者指南](../../experiments/vfx-lab/README.md)开始。
 
 ## 先读什么
 
@@ -14,7 +14,7 @@
 
 工具/SDK 停在 **1.3.0**：成熟 helper 发现、lobe/cloud 局部适配及同 run 证据交接已完成独立原创与修复补测。原件从[历史里程碑](history/milestones/MILESTONE-1.3.md)按需读取。
 
-随后完成火球、连续烟体、火烟耦合、有机轮廓与 grenade 风格适配。这一串是作品制作，没有新增公共工具能力。当前爆炸工作母版是 **Grenade 像素版**，独立烟体是 **DRIFT**，持久入口分别是 `lab/fireball-master`、`lab/smoke-master`。源文件、版本链、反馈/收录状态及交付见[生产索引](../../experiments/vfx-lab/productions/README.md)。最新 grenade 版已交付，尚无该版明确美术反馈，未正式收录。
+随后完成火球、连续烟体、火烟耦合、有机轮廓与 grenade 风格适配。这一串是作品制作，没有新增公共工具能力。当前爆炸工作母版是 **Grenade 像素版**，独立烟体是 **DRIFT像素短尾版（2026-11-09）**，持久入口分别是 `lab/fireball-master`、`lab/smoke-master`。烟体先补不规则体积与遮叠，再按反馈弱化拉丝、将4秒收为2.8秒，以3px/5色块面增强像素语言；各版保留，火球内烟副本未同步。源文件、版本链、反馈/收录状态及交付见[生产索引](../../experiments/vfx-lab/productions/README.md)。两个最新版均已交付待各自明确美术反馈，未正式收录。
 
 ```sh
 node experiments/vfx-lab/cli.mjs render '{"id":"lab/fireball-master","fps":30,"background":"black"}'

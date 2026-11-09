@@ -1,6 +1,6 @@
 # 当前状态
 
-核对日期：2026-11-08。此页集中维护当前事实；优先级见[路线](ROADMAP-PIXEL-GAMES.md)，调用参数以可执行定义和[公开 API](authoring-api.md)为准。
+核对日期：2026-11-09。此页集中维护当前事实；优先级见[路线](ROADMAP-PIXEL-GAMES.md)，调用参数以可执行定义和[公开 API](authoring-api.md)为准。
 
 ## 可以从这里开始工作
 
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | 正式库 | 293 个效果、22 个分类；其中九类俯视武器49分件已按用户批准收录，另五类19分件待审批 | [收录记录](../../experiments/vfx-lab/productions/2026-11-07-arsenal/library-installation.json)、[武器说明](../../experiments/vfx-lab/productions/2026-11-07-arsenal/README.md) |
 | 当前爆炸工作母版 | Grenade 像素版，`lab/fireball-master`；已交付，未收到该版明确美术反馈，未正式收录 | [生产索引](../../experiments/vfx-lab/productions/README.md) |
-| 独立烟体母版 | DRIFT，`lab/smoke-master`；烟体方向已获认可，未正式收录 | [烟雾说明](../../experiments/vfx-lab/productions/2026-11-08-smoke-master/README.md) |
+| 独立烟体母版 | DRIFT像素短尾版，`lab/smoke-master`；不规则体积基础上弱化拉丝、加速至2.8秒、3px/5色块面，已交付待本版反馈，未正式收录；前版保留 | [烟雾说明](../../experiments/vfx-lab/productions/2026-11-09-smoke-pixel/README.md) |
 
 本轮火球/烟雾改稿只新增作品，不提升 SDK/工具版本。作者选版、技术通过、用户美术反馈与正式库收录是不同状态。
 
@@ -39,3 +39,5 @@
 工具1.3的独立基线、复杂原创、缺口修复和分离补测见[里程碑](history/milestones/MILESTONE-1.3.md)及[原始实验](../../experiments/vfx-lab/evaluations/2026-11-08-local-reuse/README.md)。更早节点从[历史索引](history/README.md)查询，旧待办不重启。
 
 最近作品的源码/固定身份、实际观看范围、原失败和交付对照见[作品接手记录](../../experiments/vfx-lab/productions/history/2026-11-08-fireball-smoke.md)。本次提交前的技术与干净快照检查独立记录在[交接核对](history/checkpoint-2026-11-08.md)，不回填为旧里程碑验收。
+
+2026-11-09独立烟体的社区参考、五版体积取舍保留在[体积轮廓版](../../experiments/vfx-lab/productions/2026-11-09-smoke-volume/README.md)，后续弱拉丝/快速消散的选版和交付核对见[像素短尾版](../../experiments/vfx-lab/productions/2026-11-09-smoke-pixel/README.md)。这是作品制作，不改变1.3工具功能门结论。
